@@ -1,0 +1,72 @@
+{
+  "name": "ClienteAPP 3.0 — CRM Casas Prefabricadas",
+  "short_name": "ClienteAPP 3.0",
+  "description": "CRM especializado para venta y gestión de casas prefabricadas. Desarrollado por OracleTech para Construsoluciones del Meta. Funciona 100% offline.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#0a1628",
+  "theme_color": "#1a3c5e",
+  "orientation": "any",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "assets/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/img/icon-192.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Nuevo Cliente",
+      "short_name": "Cliente",
+      "description": "Agregar un nuevo cliente rápidamente",
+      "url": "./index.html#clientes",
+      "icons": [{ "src": "assets/img/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ver Tareas",
+      "short_name": "Tareas",
+      "description": "Ver tareas y pendientes",
+      "url": "./index.html#tareas",
+      "icons": [{ "src": "assets/img/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Ver resumen general",
+      "url": "./index.html#dashboard",
+      "icons": [{ "src": "assets/img/icon-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}

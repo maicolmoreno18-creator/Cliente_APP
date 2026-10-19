@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <!-- Fondo degradado azul oscuro -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a1628"/>
+      <stop offset="50%" style="stop-color:#0d2a5e"/>
+      <stop offset="100%" style="stop-color:#0a1e4a"/>
+    </linearGradient>
+    <!-- Degradado azul neón para figuras -->
+    <linearGradient id="figureGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#60c8ff"/>
+      <stop offset="100%" style="stop-color:#2d8bff"/>
+    </linearGradient>
+    <!-- Degradado para figura central (más brillante) -->
+    <linearGradient id="centerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a0e0ff"/>
+      <stop offset="100%" style="stop-color:#4db8ff"/>
+    </linearGradient>
+    <!-- Glow filter -->
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Glow fuerte para el anillo -->
+    <filter id="glowStrong" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Clip para bordes redondeados -->
+    <clipPath id="roundedRect">
+      <rect width="192" height="192" rx="42" ry="42"/>
+    </clipPath>
+  </defs>
+
+  <!-- Fondo con clip redondeado -->
+  <g clip-path="url(#roundedRect)">
+    <rect width="192" height="192" fill="url(#bgGrad)"/>
+
+    <!-- Brillo sutil en el centro -->
+    <radialGradient id="centerGlow" cx="50%" cy="55%" r="50%">
+      <stop offset="0%" style="stop-color:#1a4a9f;stop-opacity:0.6"/>
+      <stop offset="100%" style="stop-color:#0a1628;stop-opacity:0"/>
+    </radialGradient>
+    <ellipse cx="96" cy="105" rx="80" ry="70" fill="url(#centerGlow)"/>
+
+    <!-- ── ANILLO ORBITAL (efecto neón) ── -->
+    <ellipse cx="96" cy="118" rx="72" ry="22"
+             fill="none" stroke="#3a9fff" stroke-width="2.5" opacity="0.7"
+             filter="url(#glowStrong)"/>
+    <ellipse cx="96" cy="118" rx="72" ry="22"
+             fill="none" stroke="#7dd4ff" stroke-width="1" opacity="0.5"/>
+
+    <!-- Puntos de luz en el anillo -->
+    <circle cx="30" cy="116" r="3" fill="#7dd4ff" filter="url(#glow)" opacity="0.9"/>
+    <circle cx="162" cy="120" r="2.5" fill="#7dd4ff" filter="url(#glow)" opacity="0.8"/>
+    <circle cx="96" cy="96" r="2" fill="#a0e0ff" filter="url(#glow)" opacity="0.6"/>
+
+    <!-- ── FIGURA IZQUIERDA (pequeña) ── -->
+    <!-- Cabeza -->
+    <circle cx="52" cy="72" r="13" fill="url(#figureGrad)" filter="url(#glow)" opacity="0.85"/>
+    <!-- Cuerpo -->
+    <ellipse cx="52" cy="100" rx="16" ry="20" fill="url(#figureGrad)" opacity="0.75"/>
+
+    <!-- ── FIGURA DERECHA (pequeña) ── -->
+    <!-- Cabeza -->
+    <circle cx="140" cy="72" r="13" fill="url(#figureGrad)" filter="url(#glow)" opacity="0.85"/>
+    <!-- Cuerpo -->
+    <ellipse cx="140" cy="100" rx="16" ry="20" fill="url(#figureGrad)" opacity="0.75"/>
+
+    <!-- ── FIGURA CENTRAL (grande, más brillante) ── -->
+    <!-- Cabeza -->
+    <circle cx="96" cy="62" r="18" fill="url(#centerGrad)" filter="url(#glow)"/>
+    <!-- Cuerpo -->
+    <ellipse cx="96" cy="96" rx="22" ry="26" fill="url(#centerGrad)" opacity="0.9"/>
+
+    <!-- ── CHECK MARK (blanco brillante) ── -->
+    <g filter="url(#glowStrong)">
+      <!-- Sombra del check -->
+      <path d="M 68 118 L 84 136 L 124 100"
+            fill="none" stroke="#0a1628" stroke-width="10"
+            stroke-linecap="round" stroke-linejoin="round" opacity="0.4"/>
+      <!-- Check principal -->
+      <path d="M 68 118 L 84 136 L 124 100"
+            fill="none" stroke="white" stroke-width="8"
+            stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Brillo del check -->
+      <path d="M 68 118 L 84 136 L 124 100"
+            fill="none" stroke="#c0e8ff" stroke-width="3"
+            stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+    </g>
+
+    <!-- ── DESTELLOS DE LUZ ── -->
+    <circle cx="148" cy="44" r="2" fill="#7dd4ff" opacity="0.8" filter="url(#glow)"/>
+    <circle cx="44" cy="148" r="1.5" fill="#7dd4ff" opacity="0.6" filter="url(#glow)"/>
+    <circle cx="160" cy="80" r="1.5" fill="#a0e0ff" opacity="0.5"/>
+    <circle cx="32" cy="60" r="1" fill="#a0e0ff" opacity="0.4"/>
+  </g>
+</svg>

@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClienteAPP 3.0 — CRM Casas Prefabricadas</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/img/icon-192.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/img/icon-192.svg" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link href="assets/css/app.css" rel="stylesheet" />
+</head>
+<body class="bg-light">
+
+  <!-- SPLASH SCREEN -->
+  <div id="splashScreen"
+       style="position:fixed;inset:0;z-index:99999;
+              background:linear-gradient(135deg,#0a1628 0%,#0f1f30 35%,#1a3c5e 70%,#2d6a9f 100%);
+              display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;">
+
+    <!-- Fondo decorativo animado -->
+    <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;">
+      <div class="splash-orb splash-orb-1"></div>
+      <div class="splash-orb splash-orb-2"></div>
+      <div class="splash-orb splash-orb-3"></div>
+    </div>
+
+    <!-- Contenido del splash -->
+    <div id="splashContent"
+         style="display:flex;flex-direction:column;align-items:center;gap:28px;
+                position:relative;z-index:1;animation:splashEntrada 0.7s cubic-bezier(0.34,1.4,0.64,1) forwards;">
+
+      <!-- Logo empresa -->
+      <div style="width:180px;height:180px;border-radius:28px;overflow:hidden;
+                  box-shadow:0 20px 60px rgba(0,0,0,0.5),0 0 0 4px rgba(255,255,255,0.1);
+                  background:white;">
+        <img src="assets/img/logo-construsoluciones.png"
+             alt="Construsoluciones del Meta"
+             style="width:100%;height:100%;object-fit:contain;padding:8px;" />
+      </div>
+
+      <!-- Nombre y slogan -->
+      <div style="text-align:center;">
+        <div style="font-family:'Segoe UI',Arial,sans-serif;font-size:13px;font-weight:700;
+                    letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.55);
+                    margin-bottom:6px;">Bienvenido a</div>
+        <div style="font-family:'Segoe UI',Arial,sans-serif;font-size:32px;font-weight:900;
+                    color:white;letter-spacing:-0.5px;line-height:1.1;">ClienteAPP</div>
+        <div style="font-family:'Segoe UI',Arial,sans-serif;font-size:15px;font-weight:600;
+                    color:rgba(255,255,255,0.75);margin-top:4px;letter-spacing:0.3px;">
+          Versión 3.0
+        </div>
+        <div style="font-family:'Segoe UI',Arial,sans-serif;font-size:12px;
+                    color:rgba(255,255,255,0.45);margin-top:8px;">
+          Construsoluciones del Meta · OracleTech
+        </div>
+      </div>
+
+      <!-- Barra de carga animada -->
+      <div style="width:200px;height:3px;background:rgba(255,255,255,0.15);border-radius:2px;overflow:hidden;">
+        <div id="splashBar"
+             style="height:100%;width:0%;background:linear-gradient(90deg,#5a9fd4,#ffffff);
+                    border-radius:2px;transition:width 2s cubic-bezier(0.4,0,0.2,1);"></div>
+      </div>
+    </div>
+
+    <!-- Créditos pie -->
+    <div style="position:absolute;bottom:24px;font-family:'Segoe UI',Arial,sans-serif;
+                font-size:11px;color:rgba(255,255,255,0.3);text-align:center;">
+      Desarrollado por OracleTech · Ing. George Moreno
+    </div>
+  </div>
+
+  <style>
+    /* Orbes decorativos del splash */
+    .splash-orb {
+      position:absolute; border-radius:50%;
+      background:radial-gradient(circle,rgba(45,106,159,0.3),transparent 70%);
+      pointer-events:none;
+    }
+    .splash-orb-1 { width:500px;height:500px;top:-120px;right:-100px; animation:orbFloat 6s ease-in-out infinite; }
+    .splash-orb-2 { width:350px;height:350px;bottom:-80px;left:-80px;  animation:orbFloat 8s ease-in-out infinite 1s; }
+    .splash-orb-3 { width:200px;height:200px;top:40%;left:60%;         animation:orbFloat 5s ease-in-out infinite 0.5s; }
+    @keyframes orbFloat {
+      0%,100% { transform:translate(0,0) scale(1); }
+      50%      { transform:translate(15px,-20px) scale(1.05); }
+    }
+    @keyframes splashEntrada {
+      from { opacity:0; transform:scale(0.85) translateY(30px); }
+      to   { opacity:1; transform:scale(1) translateY(0); }
+    }
+    @keyframes splashSalida {
+      from { opacity:1; transform:scale(1); }
+      to   { opacity:0; transform:scale(1.05); }
+    }
+    .splash-saliendo {
+      animation: splashSalida 0.5s cubic-bezier(0.4,0,0.6,1) forwards !important;
+    }
+  </style>
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" class="d-none d-flex align-items-center justify-content-center min-vh-100"
+       style="background: linear-gradient(135deg, #0a1628 0%, #0f1f30 30%, #1a3c5e 65%, #2d6a9f 100%);">
+
+    <!-- Fondo decorativo -->
+    <div style="position:fixed;inset:0;overflow:hidden;pointer-events:none;"></div>
+
+    <style>
+      @keyframes floatBg {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        33%       { transform: translate(20px, -20px) scale(1.05); }
+        66%       { transform: translate(-15px, 15px) scale(0.97); }
+      }
+    </style>
+
+    <div class="card border-0" style="width:440px;border-radius:24px;overflow:hidden;position:relative;z-index:1;
+         box-shadow:0 40px 100px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.08);
+         background:rgba(255,255,255,0.97);backdrop-filter:blur(20px);">
+
+      <!-- Header con gradiente -->
+      <div class="text-white text-center py-5 px-4 position-relative overflow-hidden"
+           style="background:linear-gradient(135deg,#0a1628,#1a3c5e,#2d6a9f);">
+        <!-- Decoración header -->
+        <div style="position:absolute;width:200px;height:200px;border-radius:50%;
+                    background:rgba(255,255,255,0.05);top:-80px;right:-60px;pointer-events:none;"></div>
+        <div style="position:absolute;width:120px;height:120px;border-radius:50%;
+                    background:rgba(255,255,255,0.04);bottom:-40px;left:-30px;pointer-events:none;"></div>
+
+        <div class="d-inline-flex align-items-center justify-content-center rounded-3 mb-3 position-relative"
+             style="width:72px;height:72px;background:rgba(255,255,255,0.12);backdrop-filter:blur(8px);
+                    border:1.5px solid rgba(255,255,255,0.2);box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+          <img src="assets/img/icon-192.svg" alt="ClienteAPP" style="width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 0 10px rgba(100,200,255,0.6));">
+        </div>
+        <h4 class="fw-bold mb-1" style="letter-spacing:0.5px;">ClienteAPP</h4>
+        <p class="mb-0 opacity-75 small">CRM · Casas Prefabricadas</p>
+      </div>
+
+      <!-- Body -->
+      <div class="card-body p-4 p-md-5">
+        <div id="loginAlert" class="alert alert-danger alert-dismissible d-none py-2 mb-3" role="alert"
+             style="border-radius:12px;border:none;border-left:4px solid #ef4444;background:#fef2f2;">
+          <i class="bi bi-exclamation-circle me-2 text-danger"></i><span id="loginAlertMsg"></span>
+        </div>
+
+        <form id="loginForm" novalidate>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing:0.8px;">Usuario</label>
+            <div class="input-group input-group-lg">
+              <span class="input-group-text border-end-0 text-muted" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px 0 0 12px;">
+                <i class="bi bi-person fs-5"></i>
+              </span>
+              <input type="text" id="loginUser" class="form-control border-start-0 ps-1"
+                     placeholder="Tu usuario" required autocomplete="username"
+                     style="border:1.5px solid #e2e8f0;border-left:none;border-radius:0 12px 12px 0;background:#f8fafc;" />
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-semibold small text-uppercase text-muted" style="letter-spacing:0.8px;">Contraseña</label>
+            <div class="input-group input-group-lg">
+              <span class="input-group-text border-end-0 text-muted" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px 0 0 12px;">
+                <i class="bi bi-lock fs-5"></i>
+              </span>
+              <input type="password" id="loginPass" class="form-control border-start-0 border-end-0 ps-1"
+                     placeholder="••••••••" required autocomplete="current-password"
+                     style="border:1.5px solid #e2e8f0;border-left:none;border-right:none;background:#f8fafc;" />
+              <button class="btn border border-start-0" type="button" id="togglePass"
+                      style="background:#f8fafc;border:1.5px solid #e2e8f0;border-left:none;border-radius:0 12px 12px 0;">
+                <i class="bi bi-eye text-muted"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-lg w-100 fw-semibold py-3 text-white"
+                  style="background:linear-gradient(135deg,#2d6a9f,#1a3c5e);border:none;border-radius:14px;
+                         box-shadow:0 6px 20px rgba(45,106,159,0.4);font-size:15px;letter-spacing:0.3px;
+                         transition:all 0.3s;">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Ingresar
+          </button>
+        </form>
+
+        <!-- Sección de desbloqueo con Authenticator (oculta por defecto) -->
+        <div id="totpUnlockSection" class="d-none mt-3">
+          <div class="alert py-2 px-3 small mb-3" style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;color:#991b1b;">
+            <i class="bi bi-shield-lock-fill me-1"></i>
+            <strong>Cuenta bloqueada.</strong> Ingresa el código de tu Authenticator.
+          </div>
+          <div class="input-group input-group-lg mb-2">
+            <span class="input-group-text border-end-0 text-muted" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px 0 0 12px;">
+              <i class="bi bi-key fs-5"></i>
+            </span>
+            <input type="text" id="totpCode" class="form-control border-start-0 ps-1 text-center fw-bold"
+                   placeholder="000 000" maxlength="7" autocomplete="one-time-code"
+                   style="border:1.5px solid #e2e8f0;border-left:none;border-radius:0 12px 12px 0;
+                          background:#f8fafc;font-size:20px;letter-spacing:4px;" />
+          </div>
+          <button type="button" class="btn btn-lg w-100 fw-semibold py-3 text-white" id="btnTotpUnlock"
+                  style="background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:14px;
+                         box-shadow:0 6px 20px rgba(16,185,129,0.4);font-size:15px;">
+            <i class="bi bi-unlock me-2"></i>Desbloquear
+          </button>
+          <div id="totpUnlockAlert" class="text-danger small text-center mt-2 d-none"></div>
+        </div>
+
+        <div class="text-center mt-4">
+          <small class="text-muted d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-shield-check text-success"></i>
+            Acceso protegido · Datos locales cifrados
+          </small>
+          <div class="mt-3 pt-3 border-top">
+            <small class="text-muted" style="font-size:11px;line-height:1.6;">
+              <i class="bi bi-code-slash me-1" style="color:#2d6a9f;"></i>
+              CRM desarrollado por <strong style="color:#1a3c5e;">OracleTech</strong>
+              · George Moreno
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="appScreen" class="d-none">
+
+    <!-- SIDEBAR -->
+    <nav id="sidebar" class="sidebar d-flex flex-column">
+      <div class="sidebar-header">
+        <div class="d-flex align-items-center gap-2">
+          <img src="assets/img/icon-192.svg" alt="logo" style="width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(100,200,255,0.5));">
+          <span class="fw-bold fs-5">ClienteAPP</span>
+        </div>
+        <button class="btn btn-sm btn-outline-light d-lg-none" id="closeSidebar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <!-- User info -->
+      <div class="sidebar-user">
+        <div class="d-flex align-items-center gap-2">
+          <div class="user-avatar" id="sidebarAvatar">A</div>
+          <div>
+            <div class="fw-semibold small" id="sidebarUserName">Usuario</div>
+            <div class="badge-role" id="sidebarUserRole">Rol</div>
+          </div>
+        </div>
+      </div>
+
+      <ul class="sidebar-nav flex-grow-1">
+        <li class="nav-section">PRINCIPAL</li>
+        <li>
+          <a href="#" class="sidebar-link active" data-page="dashboard">
+            <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="sidebar-link" data-page="clientes">
+            <i class="bi bi-people"></i><span>Clientes</span>
+            <span class="badge bg-primary ms-auto rounded-pill" id="badgeClientes">0</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="sidebar-link" data-page="proyectos">
+            <i class="bi bi-building"></i><span>Proyectos</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="sidebar-link" data-page="pagos">
+            <i class="bi bi-cash-stack"></i><span>Pagos</span>
+            <span class="badge bg-warning text-dark ms-auto rounded-pill" id="badgePagos">0</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="sidebar-link" data-page="finanzas">
+            <i class="bi bi-wallet2"></i><span>Mis Finanzas</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="sidebar-link" data-page="tareas">
+            <i class="bi bi-check2-square"></i><span>Tareas</span>
+            <span class="badge bg-danger ms-auto rounded-pill" id="badgeTareas" style="display:none;">0</span>
+          </a>
+        </li>
+        <li class="nav-section">SISTEMA</li>
+        <li>
+          <a href="#" class="sidebar-link" data-page="configuracion">
+            <i class="bi bi-gear"></i><span>Configuración</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span id="syncStatus" class="sync-dot online"></span>
+          <small id="syncText">En línea</small>
+        </div>
+        <button class="btn btn-sm btn-outline-light w-100" id="btnLogout">
+          <i class="bi bi-box-arrow-right me-1"></i>Cerrar Sesión
+        </button>
+      </div>
+    </nav>
+
+    <!-- OVERLAY for mobile -->
+    <div id="sidebarOverlay" class="sidebar-overlay d-none"></div>
+
+    <!-- MAIN CONTENT -->
+    <div id="mainContent" class="main-content">
+
+      <!-- TOP BAR -->
+      <header class="topbar">
+        <div class="d-flex align-items-center gap-3">
+          <button class="btn btn-sm btn-outline-secondary d-lg-none" id="openSidebar"
+                  style="border-radius:10px;width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-list fs-5"></i>
+          </button>
+          <div>
+            <h5 class="mb-0 fw-bold" id="pageTitle" style="letter-spacing:-0.3px;">Dashboard</h5>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <!-- Botón búsqueda global -->
+          <button class="btn btn-sm btn-outline-secondary" id="btnBusquedaGlobal"
+                  title="Búsqueda global (Ctrl+K)"
+                  style="border-radius:12px;width:40px;height:40px;padding:0;
+                  display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-search fs-6"></i>
+          </button>
+          <!-- Botón ocultar/mostrar valores en dinero -->
+          <button class="btn btn-sm btn-outline-secondary" id="btnToggleMoney"
+                  title="Ocultar valores en dinero" aria-pressed="false"
+                  style="border-radius:12px;width:40px;height:40px;padding:0;
+                  display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-eye fs-6"></i>
+          </button>
+
+          <!-- Botón notificaciones -->
+          <button class="btn btn-sm btn-outline-secondary position-relative" id="btnNotifications"
+                  title="Notificaciones" style="border-radius:12px;width:40px;height:40px;padding:0;
+                  display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-bell fs-6"></i>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                  id="notifBadge" style="display:none;font-size:9px;min-width:18px;height:18px;
+                  display:none;align-items:center;justify-content:center;">0</span>
+          </button>
+          <!-- Botón instalar PWA — siempre visible -->
+          <button class="btn btn-sm" id="btnInstalarPWA" title="Instalar en escritorio"
+                  style="border-radius:12px;background:linear-gradient(135deg,#10b981,#059669);
+                  color:white;border:none;box-shadow:0 3px 12px rgba(16,185,129,0.35);
+                  padding:6px 14px;font-weight:600;font-size:13px;">
+            <i class="bi bi-download me-1"></i><span class="d-none d-sm-inline">Instalar App</span>
+          </button>
+          <!-- Botón nuevo cliente -->
+          <button class="btn btn-primary btn-sm px-3" id="btnQuickAdd"
+                  style="border-radius:12px;font-weight:600;">
+            <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Nuevo Cliente</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- PAGE CONTENT -->
+      <main class="page-content" id="pageContent">
+        <!-- Pages rendered here by JS -->
+      </main>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer" style="z-index:9999;"></div>
+
+  <!-- MODALS -->
+  <!-- Modal Cliente -->
+  <div class="modal fade" id="modalCliente" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="background:linear-gradient(135deg,#1a3c5e,#2d6a9f); color:white;">
+          <h5 class="modal-title" id="modalClienteTitle"><i class="bi bi-person-plus me-2"></i>Nuevo Cliente</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formCliente">
+            <input type="hidden" id="clienteId" />
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Nombre Completo *</label>
+                <input type="text" class="form-control" id="clienteNombre" required placeholder="Ej: Juan Pérez García" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Teléfono / WhatsApp *</label>
+                <input type="tel" class="form-control" id="clienteTelefono" required placeholder="Ej: 3001234567" />
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Ubicación del Lote</label>
+                <input type="text" class="form-control" id="clienteUbicacion" placeholder="Ej: Calle 10 #5-20, Barrio El Prado" />
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Notas Iniciales</label>
+                <textarea class="form-control" id="clienteNotas" rows="3" placeholder="Observaciones, referencias, cómo llegó el cliente..."></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnGuardarCliente">
+            <i class="bi bi-check-lg me-1"></i>Guardar Cliente
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Proyecto -->
+  <div class="modal fade" id="modalProyecto" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="background:linear-gradient(135deg,#1a4a2e,#2d8a4f); color:white;">
+          <h5 class="modal-title" id="modalProyectoTitle"><i class="bi bi-building me-2"></i>Proyecto de Casa</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formProyecto">
+            <input type="hidden" id="proyectoId" />
+            <input type="hidden" id="proyectoClienteId" />
+            <div class="row g-3">
+
+              <!-- Datos básicos -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Modelo de Casa *</label>
+                <input type="text" class="form-control" id="proyectoModelo" required placeholder="Ej: Casa Campestre 60m²" />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Área (m²) *</label>
+                <input type="number" class="form-control" id="proyectoArea" required placeholder="60" min="1" />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Precio Total *</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" id="proyectoPrecio" required placeholder="0" min="0" />
+                </div>
+              </div>
+
+              <!-- Fecha estimada de entrega -->
+              <div class="col-12" id="seccionFechaEntrega">
+                <label class="form-label fw-semibold">
+                  <i class="bi bi-calendar-check me-1 text-success"></i>Fecha Estimada de Entrega
+                </label>
+                <input type="date" class="form-control" id="proyectoFechaEntrega" />
+              </div>
+
+              <!-- Estado del Proyecto -->
+              <div class="col-12">
+                <label class="form-label fw-semibold">
+                  <i class="bi bi-flag me-1 text-primary"></i>Estado del Proyecto
+                </label>
+                <select class="form-select" id="clienteEstado">
+                  <option value="nuevo">🟢 Nuevo</option>
+                  <option value="cotizado">🔵 Cotizado</option>
+                  <option value="negociacion">🟡 En Negociación</option>
+                  <option value="firmado">🟠 Firmado</option>
+                  <option value="construccion">🔴 En Construcción</option>
+                  <option value="finalizado">✅ Finalizado</option>
+                  <option value="perdido">❌ Perdido</option>
+                </select>
+                <div class="form-text text-muted">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Cambia a <strong>Firmado</strong> para activar pagos y fecha de entrega.
+                  Cambia a <strong>En Construcción</strong> cuando inicie la obra.
+                </div>
+              </div>
+
+              <!-- Banner cotización (visible cuando NO está firmado) -->
+              <div class="col-12" id="bannerCotizacion">
+                <div class="alert alert-info d-flex align-items-center gap-2 py-2 mb-0">
+                  <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
+                  <div class="small">
+                    <strong>Modo cotización</strong> — Esta propuesta se guardará sin generar pagos ni fecha de entrega.
+                    Cuando el cliente firme, cambia su estado a <strong>Firmado</strong> y edita el proyecto para activar todo.
+                  </div>
+                </div>
+              </div>
+
+              <!-- ── CARACTERÍSTICAS TÉCNICAS DE LA VIVIENDA ── -->
+              <div class="col-12">
+                <div class="d-flex align-items-center gap-2 mb-3 mt-1">
+                  <div style="height:2px;flex:1;background:linear-gradient(90deg,#2d8a4f,transparent);"></div>
+                  <span class="fw-bold small text-success text-uppercase" style="letter-spacing:1px;">
+                    <i class="bi bi-tools me-1"></i>Características Técnicas
+                  </span>
+                  <div style="height:2px;flex:1;background:linear-gradient(90deg,transparent,#2d8a4f);"></div>
+                </div>
+              </div>
+
+              <!-- Sistema constructivo -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">
+                  <i class="bi bi-bricks me-1 text-secondary"></i>Sistema Constructivo
+                </label>
+                <select class="form-select form-select-sm" id="especSistema">
+                  <option value="">Seleccionar...</option>
+                </select>
+              </div>
+
+              <!-- Estilo de la vivienda -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">
+                  <i class="bi bi-house-door me-1 text-secondary"></i>Estilo de la Vivienda
+                </label>
+                <input type="text" class="form-control form-control-sm" id="especEstilo"
+                       placeholder="Ej: Dos aguas adelante y atrás con lucarna" />
+              </div>
+
+              <!-- Altura -->
+              <div class="col-md-4">
+                <label class="form-label fw-semibold small">
+                  <i class="bi bi-arrows-vertical me-1 text-secondary"></i>Altura Mínima (m)
+                </label>
+                <input type="number" class="form-control form-control-sm" id="especAlturaMin"
+                       placeholder="2.66" step="0.01" min="0" />
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold small">
+                  <i class="bi bi-arrows-vertical me-1 text-secondary"></i>Altura Máxima (m)
+                </label>
+                <input type="number" class="form-control form-control-sm" id="especAlturaMax"
+                       placeholder="3.10" step="0.01" min="0" />
+              </div>
+
+              <!-- Tipo de cubierta -->
+              <div class="col-md-4">
+                <label class="form-label fw-semibold small">
+                  <i class="bi bi-house-fill me-1 text-secondary"></i>Tipo de Cubierta
+                </label>
+                <select class="form-select form-select-sm" id="especCubierta">
+                  <option value="">Seleccionar...</option>
+                </select>
+              </div>
+              <div class="col-12 d-none" id="especCubiertaOtroGroup">
+                <input type="text" class="form-control form-control-sm" id="especCubiertaOtro"
+                       placeholder="Especifica el tipo de cubierta..." />
+              </div>
+
+              <!-- Ornamentación -->
+              <div class="col-12">
+                <div class="card border-0 bg-light rounded-3 p-3">
+                  <div class="fw-semibold small mb-2">
+                    <i class="bi bi-grid-3x3-gap me-1 text-secondary"></i>Ornamentación (Ventanas / Rejas)
+                  </div>
+                  <div class="row g-2">
+
+                    <!-- Fila 1: Sistema + Color (siempre visible) -->
+                    <div class="col-md-6">
+                      <label class="form-label fw-semibold" style="font-size:11px;">Sistema</label>
+                      <select class="form-select form-select-sm" id="especOrnSistema">
+                        <option value="">Seleccionar...</option>
+                      </select>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label fw-semibold" style="font-size:11px;">Color (anticorrosivo)</label>
+                      <select class="form-select form-select-sm" id="especOrnColor">
+                        <option value="">Seleccionar...</option>
+                      </select>
+                    </div>
+                    <div class="col-md-6 d-none" id="especOrnColorOtroGroup">
+                      <input type="text" class="form-control form-control-sm" id="especOrnColorOtro"
+                             placeholder="Color personalizado..." />
+                    </div>
+
+                    <!-- Solo Abatibles: sentido apertura abatibles -->
+                    <div class="col-md-6 d-none" id="especOrnAperturaGroup">
+                      <label class="form-label fw-semibold" style="font-size:11px;">
+                        Sentido de apertura (abatibles)
+                      </label>
+                      <select class="form-select form-select-sm" id="especOrnApertura">
+                        <option value="">Seleccionar...</option>
+                        <option value="Hacia adentro">Hacia adentro</option>
+                        <option value="Hacia afuera">Hacia afuera</option>
+                      </select>
+                    </div>
+
+                    <!-- Solo Corredizas: sentido apertura corredizas -->
+                    <div class="col-md-6 d-none" id="especOrnAperturaCorredizaGroup">
+                      <label class="form-label fw-semibold" style="font-size:11px;">
+                        Sentido de apertura (corredizas)
+                      </label>
+                      <select class="form-select form-select-sm" id="especOrnAperturaCorrediza">
+                        <option value="">Seleccionar...</option>
+                        <option value="Del centro hacia los lados">Del centro hacia los lados</option>
+                        <option value="De los lados hacia el centro">De los lados hacia el centro</option>
+                      </select>
+                    </div>
+
+                    <!-- Sistema mixto: sub-secciones abatibles + corredizas -->
+                    <div class="col-12 d-none" id="especOrnMixtoGroup">
+                      <div class="row g-2 mt-1">
+                        <!-- Sub-sección abatibles -->
+                        <div class="col-12">
+                          <div class="rounded-3 p-2" style="background:#e8f0f8;border:1px solid #c8d8e8;">
+                            <div class="fw-semibold mb-2" style="font-size:11px;color:#1a3c5e;">
+                              <i class="bi bi-window me-1"></i>Ventanas Abatibles
+                            </div>
+                            <div class="row g-2">
+                              <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:11px;">Descripción / Referencias</label>
+                                <input type="text" class="form-control form-control-sm" id="especOrnMixtoAbatiblesRef"
+                                       placeholder="Ej: Ventanas alcoba, baño..." />
+                              </div>
+                              <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:11px;">Apertura</label>
+                                <select class="form-select form-select-sm" id="especOrnAperturaAbatible">
+                                  <option value="">Seleccionar...</option>
+                                  <option value="Hacia adentro">Hacia adentro</option>
+                                  <option value="Hacia afuera">Hacia afuera</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Sub-sección corredizas -->
+                        <div class="col-12">
+                          <div class="rounded-3 p-2" style="background:#e8f8ee;border:1px solid #b8e8cc;">
+                            <div class="fw-semibold mb-2" style="font-size:11px;color:#1a4a2e;">
+                              <i class="bi bi-arrows-expand me-1"></i>Ventanas Corredizas
+                            </div>
+                            <div class="row g-2">
+                              <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:11px;">Descripción / Referencias</label>
+                                <input type="text" class="form-control form-control-sm" id="especOrnMixtoCorredizasRef"
+                                       placeholder="Ej: Ventanas sala, cocina..." />
+                              </div>
+                              <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:11px;">Apertura</label>
+                                <select class="form-select form-select-sm" id="especOrnAperturaCorredizaMixto">
+                                  <option value="">Seleccionar...</option>
+                                  <option value="Del centro hacia los lados">Del centro hacia los lados</option>
+                                  <option value="De los lados hacia el centro">De los lados hacia el centro</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              <!-- Puertas internas -->
+              <div class="col-12">
+                <div class="card border-0 bg-light rounded-3 p-3">
+                  <div class="fw-semibold small mb-2">
+                    <i class="bi bi-door-open me-1 text-secondary"></i>Puertas Internas (Entamboradas)
+                  </div>
+                  <div class="row g-2">
+                    <div class="col-md-6">
+                      <label class="form-label fw-semibold" style="font-size:11px;">Color de las puertas</label>
+                      <input type="text" class="form-control form-control-sm" id="especPuertaColor"
+                             placeholder="Ej: Tabaco, Blanco, Wengue..." />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label fw-semibold" style="font-size:11px;">Tipo de chapa</label>
+                      <select class="form-select form-select-sm" id="especPuertaChapa">
+                        <option value="">Seleccionar...</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Obsequios -->
+              <div class="col-12">
+                <div class="card border-0 bg-light rounded-3 p-3">
+                  <div class="fw-semibold small mb-2">
+                    <i class="bi bi-gift me-1 text-secondary"></i>Obsequios
+                  </div>
+                  <div id="especObsequiosGroup" class="d-flex flex-wrap gap-1 mb-1">
+                    <!-- Checkboxes generados por Opciones.llenarCheckboxObsequios() -->
+                  </div>
+                  <div class="form-text text-muted mt-1" style="font-size:11px;">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Selecciona los obsequios incluidos en este proyecto.
+                    Configura las opciones disponibles en <strong>Configuración</strong>.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Placa -->
+              <div class="col-12" id="seccionPlaca">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="proyectoPlaca" />
+                  <label class="form-check-label fw-semibold" for="proyectoPlaca">
+                    Incluye Placa de Cimentación (cobro 100% independiente)
+                  </label>
+                </div>
+              </div>
+              <div class="col-md-6 d-none" id="placaPrecioGroup">
+                <label class="form-label fw-semibold">Precio Placa de Cimentación</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" id="proyectoPlacaPrecio" placeholder="0" min="0" />
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fw-semibold">Notas del Proyecto</label>
+                <textarea class="form-control" id="proyectoNotas" rows="2" placeholder="Observaciones técnicas, acuerdos especiales..."></textarea>
+              </div>
+
+              <!-- Evidencias fotográficas -->
+              <div class="col-12" id="seccionEvidencias">
+                <hr class="my-1" />
+                <label class="form-label fw-semibold">
+                  <i class="bi bi-images me-1 text-primary"></i>Evidencias Fotográficas / Planos
+                </label>
+                <div id="dropZone" class="drop-zone">
+                  <i class="bi bi-cloud-upload fs-2 text-muted d-block mb-2"></i>
+                  <p class="mb-1 fw-semibold text-muted">Arrastra fotos o planos aquí</p>
+                  <p class="mb-2 small text-muted">JPG, PNG, PDF, DWG — Máx. 5 MB por archivo</p>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('inputArchivos').click()">
+                    <i class="bi bi-folder2-open me-1"></i>Seleccionar archivos
+                  </button>
+                  <input type="file" id="inputArchivos" multiple accept="image/*,.pdf" class="d-none" />
+                </div>
+                <!-- Preview de archivos seleccionados -->
+                <div id="archivosPreview" class="row g-2 mt-2"></div>
+              </div>
+
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-success" id="btnGuardarProyecto">
+            <i class="bi bi-check-lg me-1"></i>Guardar Proyecto
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Pago -->
+  <div class="modal fade" id="modalPago" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="background:linear-gradient(135deg,#4a2e1a,#8a5a2d); color:white;">
+          <h5 class="modal-title" id="modalPagoTitle"><i class="bi bi-cash me-2"></i>Registrar Pago</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formPago">
+            <input type="hidden" id="pagoId" />
+            <input type="hidden" id="pagoClienteId" />
+            <input type="hidden" id="pagoEtapa" />
+            <input type="hidden" id="pagoValorTotal" />
+            <input type="hidden" id="pagoYaPagado" />
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label fw-semibold">Etapa de Pago</label>
+                <input type="text" class="form-control" id="pagoEtapaNombre" readonly />
+              </div>
+
+              <!-- Resumen del estado actual de la etapa -->
+              <div class="col-12">
+                <div class="d-flex flex-wrap gap-2" id="pagoResumenActual">
+                  <!-- Se llena dinámicamente: Ya pagado / Falta / Total -->
+                </div>
+              </div>
+
+              <!-- Selector de modo: Agregar abono vs Corregir total -->
+              <div class="col-12">
+                <div class="btn-group w-100" role="group" aria-label="Modo de registro">
+                  <input type="radio" class="btn-check" name="pagoModo" id="pagoModoAbono" value="abono" checked>
+                  <label class="btn btn-outline-success" for="pagoModoAbono">
+                    <i class="bi bi-plus-circle me-1"></i>Agregar abono
+                  </label>
+                  <input type="radio" class="btn-check" name="pagoModo" id="pagoModoCorregir" value="corregir">
+                  <label class="btn btn-outline-secondary" for="pagoModoCorregir">
+                    <i class="bi bi-pencil-square me-1"></i>Corregir total
+                  </label>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" id="pagoValorLabel">Abono a registrar *</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" id="pagoValor" required placeholder="0" min="0" />
+                </div>
+                <div class="form-text" id="pagoValorHint"></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Fecha de Pago *</label>
+                <input type="date" class="form-control" id="pagoFecha" required />
+              </div>
+
+              <!-- Método de pago (para el historial de abonos) -->
+              <div class="col-md-6" id="pagoMetodoGroup">
+                <label class="form-label fw-semibold">Método de pago</label>
+                <select class="form-select" id="pagoMetodo">
+                  <option value="Efectivo">💵 Efectivo</option>
+                  <option value="Transferencia">🏦 Transferencia</option>
+                  <option value="Consignación">🧾 Consignación</option>
+                  <option value="Nequi / Daviplata">📱 Nequi / Daviplata</option>
+                  <option value="Cheque">📝 Cheque</option>
+                  <option value="Otro">➕ Otro</option>
+                </select>
+              </div>
+
+              <!-- Vista previa del nuevo total tras el abono -->
+              <div class="col-12">
+                <div class="alert alert-info py-2 px-3 mb-0 d-flex align-items-center gap-2" id="pagoPreview" style="display:none !important;">
+                  <i class="bi bi-calculator flex-shrink-0"></i>
+                  <span id="pagoPreviewText" class="small"></span>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fw-semibold">Nota del abono</label>
+                <input type="text" class="form-control" id="pagoNotaAbono" placeholder="Ej: N° transferencia, quién pagó, referencia..." />
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fw-semibold">Estado</label>
+                <select class="form-select" id="pagoEstado">
+                  <option value="pendiente">⏳ Pendiente</option>
+                  <option value="parcial">🔄 Pago Parcial</option>
+                  <option value="pagado">✅ Pagado Completo</option>
+                </select>
+                <div class="form-text">El estado se calcula automáticamente según el total pagado.</div>
+              </div>
+
+              <!-- Historial de abonos de esta etapa -->
+              <div class="col-12" id="pagoHistorialGroup" style="display:none;">
+                <label class="form-label fw-semibold">
+                  <i class="bi bi-clock-history me-1 text-secondary"></i>Historial de abonos
+                </label>
+                <div id="pagoHistorialLista" class="d-flex flex-column gap-2"></div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fw-semibold">Observaciones generales</label>
+                <textarea class="form-control" id="pagoObservaciones" rows="2" placeholder="Notas generales de la etapa..."></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-warning" id="btnGuardarPago">
+            <i class="bi bi-check-lg me-1"></i>Registrar Pago
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Seguimiento -->
+  <div class="modal fade" id="modalSeguimiento" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="background:linear-gradient(135deg,#2e1a4a,#5a2d8a); color:white;">
+          <h5 class="modal-title"><i class="bi bi-chat-dots me-2"></i>Agregar Seguimiento</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formSeguimiento">
+            <input type="hidden" id="seguimientoClienteId" />
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label fw-semibold">Tipo de Interacción</label>
+                <select class="form-select" id="seguimientoTipo">
+                  <option value="llamada">📞 Llamada</option>
+                  <option value="whatsapp">💬 WhatsApp</option>
+                  <option value="visita">🏠 Visita al lote</option>
+                  <option value="reunion">🤝 Reunión</option>
+                  <option value="nota">📝 Nota interna</option>
+                  <option value="recordatorio">🔔 Recordatorio</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Descripción *</label>
+                <textarea class="form-control" id="seguimientoDescripcion" rows="4" required placeholder="¿Qué ocurrió? ¿Qué se acordó? ¿Próximos pasos?"></textarea>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Próximo Recordatorio</label>
+                <input type="datetime-local" class="form-control" id="seguimientoRecordatorio" />
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-purple" id="btnGuardarSeguimiento" style="background:#5a2d8a; color:white; border:none;">
+            <i class="bi bi-check-lg me-1"></i>Guardar Seguimiento
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Expediente (ficha completa) -->
+  <div class="modal fade" id="modalExpediente" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="background:linear-gradient(135deg,#1a3c5e,#2d6a9f); color:white;">
+          <h5 class="modal-title" id="expedienteTitulo"><i class="bi bi-folder2-open me-2"></i>Expediente del Cliente</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div id="expedienteContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tarea -->
+  <div class="modal fade" id="modalTarea" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="background:linear-gradient(135deg,#1a2e4a,#2d5a8a); color:white;">
+          <h5 class="modal-title" id="modalTareaTitle">
+            <i class="bi bi-check2-square me-2"></i>Nueva Tarea
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formTarea">
+            <input type="hidden" id="tareaId" />
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label fw-semibold">Tarea *</label>
+                <input type="text" class="form-control" id="tareaTitulo" required
+                       placeholder="Ej: Pedir planos de ejes y cimientos" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Categoría</label>
+                <select class="form-select" id="tareaCategoria">
+                  <option value="planos">📐 Planos y Diseño</option>
+                  <option value="materiales">🧱 Materiales</option>
+                  <option value="admin">📋 Administrativo</option>
+                  <option value="cliente">👤 Cliente</option>
+                  <option value="obra">🏗️ Obra</option>
+                  <option value="finanzas">💰 Finanzas</option>
+                  <option value="otro">📌 Otro</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Prioridad</label>
+                <select class="form-select" id="tareaPrioridad">
+                  <option value="alta">🔴 Alta</option>
+                  <option value="media" selected>🟡 Media</option>
+                  <option value="baja">🟢 Baja</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Fecha límite</label>
+                <input type="date" class="form-control" id="tareaFecha" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Cliente relacionado</label>
+                <select class="form-select" id="tareaCliente">
+                  <option value="">Sin cliente</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Notas</label>
+                <textarea class="form-control" id="tareaNotas" rows="2"
+                          placeholder="Detalles adicionales..."></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnGuardarTarea">
+            <i class="bi bi-check-lg me-1"></i>Guardar Tarea
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Configuración Usuarios -->
+  <div class="modal fade" id="modalUsuario" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header" style="background:linear-gradient(135deg,#1a3c5e,#2d6a9f); color:white;">
+          <h5 class="modal-title" id="modalUsuarioTitle"><i class="bi bi-person-gear me-2"></i>Mi Cuenta</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small">Gestiona tu contraseña desde <strong>Configuración</strong>.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       MODALES FINANZAS
+  ══════════════════════════════════════════ -->
+
+  <!-- Modal Comisión -->
+  <div class="modal fade" id="modalComision" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="background:linear-gradient(135deg,#1a4a2e,#2d8a4f); color:white;">
+          <h5 class="modal-title"><i class="bi bi-percent me-2"></i>Registrar Cobro de Comisión</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formComision">
+            <input type="hidden" id="comisionProyectoId" />
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label fw-semibold">Proyecto *</label>
+                <select class="form-select" id="comisionProyectoSelect" required></select>
+              </div>
+              <div class="col-12">
+                <div class="alert alert-info py-2 small mb-0" id="comisionInfoAlert">
+                  <i class="bi bi-info-circle me-1"></i>
+                  <span id="comisionInfoText">Selecciona un proyecto para ver la comisión.</span>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Monto a Registrar *</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" id="comisionMonto" required placeholder="0" min="0" />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Fecha *</label>
+                <input type="date" class="form-control" id="comisionFecha" required />
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Observaciones</label>
+                <textarea class="form-control" id="comisionObservaciones" rows="2" placeholder="Etapa cobrada, método de pago..."></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-success" id="btnGuardarComision">
+            <i class="bi bi-check-lg me-1"></i>Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Préstamo -->
+  <div class="modal fade" id="modalPrestamo" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="background:linear-gradient(135deg,#4a1a1a,#8a2d2d); color:white;">
+          <h5 class="modal-title"><i class="bi bi-bank me-2"></i>Registrar Préstamo</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formPrestamo">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label fw-semibold">Descripción *</label>
+                <input type="text" class="form-control" id="prestamoDescripcion" required placeholder="Ej: Préstamo para gastos personales" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Monto *</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" id="prestamoMonto" required placeholder="0" min="0" />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Fecha *</label>
+                <input type="date" class="form-control" id="prestamoFecha" required />
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Observaciones</label>
+                <textarea class="form-control" id="prestamoObservaciones" rows="2" placeholder="Fuente del préstamo, condiciones..."></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="btnGuardarPrestamo">
+            <i class="bi bi-check-lg me-1"></i>Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Abono -->
+  <div class="modal fade" id="modalAbono" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="background:linear-gradient(135deg,#4a3a1a,#8a6a2d); color:white;">
+          <h5 class="modal-title"><i class="bi bi-arrow-down-circle me-2"></i>Registrar Abono a Préstamo</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formAbono">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label fw-semibold">Préstamo *</label>
+                <select class="form-select" id="abonoPrestamoSelect" required></select>
+              </div>
+              <div class="col-12">
+                <div class="alert alert-warning py-2 small mb-0" id="abonoInfoAlert" style="display:none;">
+                  <i class="bi bi-info-circle me-1"></i>
+                  <span id="abonoInfoText"></span>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Monto del Abono *</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" id="abonoMonto" required placeholder="0" min="0" />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Fecha *</label>
+                <input type="date" class="form-control" id="abonoFecha" required />
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Observaciones</label>
+                <textarea class="form-control" id="abonoObservaciones" rows="2" placeholder="Método de pago, notas..."></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-warning" id="btnGuardarAbono">
+            <i class="bi bi-check-lg me-1"></i>Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Base Mensual -->
+  <div class="modal fade" id="modalBase" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header" style="background:linear-gradient(135deg,#1a2e4a,#2d5a8a); color:white;">
+          <h5 class="modal-title"><i class="bi bi-calendar-check me-2"></i>Registrar Base Mensual</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formBase">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Mes / Año *</label>
+                <input type="month" class="form-control" id="baseMes" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Monto *</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" id="baseMonto" required value="500000" min="0" />
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Destino *</label>
+                <div class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="baseDestino" id="baseDestinoDisponible" value="disponible" checked />
+                    <label class="form-check-label" for="baseDestinoDisponible">
+                      <i class="bi bi-wallet2 me-1 text-success"></i>Disponible para mí
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="baseDestino" id="baseDestinoPrestamo" value="prestamo" />
+                    <label class="form-check-label" for="baseDestinoPrestamo">
+                      <i class="bi bi-arrow-down-circle me-1 text-warning"></i>Abonar a un préstamo específico
+                    </label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="baseDestino" id="baseDestinoTodo" value="todo" />
+                    <label class="form-check-label" for="baseDestinoTodo">
+                      <i class="bi bi-lightning-charge me-1 text-danger"></i>Abonar todo hasta donde alcance
+                      <small class="text-muted d-block ms-4">Paga deudas de menor a mayor hasta agotar el monto</small>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 d-none" id="basePrestamoGroup">
+                <label class="form-label fw-semibold">Préstamo a Abonar *</label>
+                <select class="form-select" id="basePrestamoSelect"></select>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Observaciones</label>
+                <textarea class="form-control" id="baseObservaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnGuardarBase">
+            <i class="bi bi-check-lg me-1"></i>Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Instalación PWA -->
+  <div class="modal fade" id="modalInstalar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+      <div class="modal-content border-0 shadow-lg" style="border-radius:24px;overflow:hidden;">
+        <div class="modal-header border-0 py-4 px-4 text-white"
+             style="background:linear-gradient(135deg,#0a1628,#1a3c5e,#10b981);">
+          <div class="d-flex align-items-center gap-3">
+            <div style="width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,0.15);
+                        display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);">
+              <i class="bi bi-download fs-4"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold mb-0">Instalar ClienteAPP</h5>
+              <div class="opacity-75 small">En tu escritorio o dispositivo</div>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+
+          <!-- Botón automático (aparece si el navegador lo soporta) -->
+          <div id="pwaAutoInstall" class="d-none mb-4">
+            <div class="alert border-0 py-3 mb-3" style="background:#ecfdf5;border-left:4px solid #10b981 !important;border-radius:12px;">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                <div>
+                  <div class="fw-semibold text-success small">¡Tu navegador soporta instalación directa!</div>
+                  <div class="text-muted" style="font-size:12px;">Haz clic en el botón para instalar ahora</div>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-success w-100 py-3 fw-bold" id="btnInstalarDirecto"
+                    style="border-radius:14px;font-size:15px;box-shadow:0 6px 20px rgba(16,185,129,0.35);">
+              <i class="bi bi-download me-2"></i>Instalar Ahora
+            </button>
+          </div>
+
+          <!-- Instrucciones manuales -->
+          <div id="pwaManualInstall">
+            <p class="text-muted small mb-3">Sigue estos pasos según tu navegador:</p>
+
+            <!-- Chrome / Edge -->
+            <div class="mb-3 p-3 rounded-3" style="background:#f8fafc;border:1.5px solid #e2e8f0;">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <span style="font-size:20px;">🌐</span>
+                <span class="fw-bold small">Chrome o Edge (PC / Android)</span>
+              </div>
+              <ol class="mb-0 small text-muted ps-3" style="line-height:2;">
+                <li>Abre la app en <strong>Chrome</strong> o <strong>Edge</strong></li>
+                <li>Haz clic en los <strong>3 puntos</strong> (menú) arriba a la derecha</li>
+                <li>Selecciona <strong>"Instalar ClienteAPP"</strong> o <strong>"Guardar e instalar"</strong></li>
+                <li>Confirma la instalación</li>
+              </ol>
+            </div>
+
+            <!-- Safari iOS -->
+            <div class="mb-3 p-3 rounded-3" style="background:#f8fafc;border:1.5px solid #e2e8f0;">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <span style="font-size:20px;">🍎</span>
+                <span class="fw-bold small">Safari (iPhone / iPad)</span>
+              </div>
+              <ol class="mb-0 small text-muted ps-3" style="line-height:2;">
+                <li>Abre la app en <strong>Safari</strong></li>
+                <li>Toca el botón <strong>Compartir</strong> <i class="bi bi-box-arrow-up"></i></li>
+                <li>Selecciona <strong>"Agregar a pantalla de inicio"</strong></li>
+                <li>Toca <strong>Agregar</strong></li>
+              </ol>
+            </div>
+
+            <!-- Nota importante -->
+            <div class="alert border-0 py-2 px-3 small" style="background:#fffbeb;border-left:4px solid #f59e0b !important;border-radius:10px;">
+              <i class="bi bi-info-circle text-warning me-1"></i>
+              <strong>Importante:</strong> La app debe estar en un servidor web (no abrirse como archivo local) para que la instalación funcione correctamente.
+              Si la abres con <code>file://</code>, usa un servidor local como <strong>Live Server</strong> en VS Code.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0 pb-4 px-4">
+          <button type="button" class="btn btn-light w-100" data-bs-dismiss="modal"
+                  style="border-radius:12px;">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Nuevo Usuario (solo superadmin) -->
+  <div class="modal fade" id="modalNuevoUsuario" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header" style="background:linear-gradient(135deg,#2d1a4a,#5a2d8a);color:white;">
+          <h5 class="modal-title">
+            <i class="bi bi-person-plus me-2"></i>Nuevo Usuario Administrador
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            El nuevo usuario tendrá acceso completo como <strong>Administrador</strong>.
+            Solo tú (Super Admin) puedes crearlo, desactivarlo o eliminarlo.
+          </div>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Nombre completo *</label>
+              <input type="text" class="form-control" id="nuevoUsuarioNombre"
+                     placeholder="Ej: Laura Gómez" maxlength="50" />
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Usuario (login) *</label>
+              <input type="text" class="form-control" id="nuevoUsuarioLogin"
+                     placeholder="Ej: laura" maxlength="30"
+                     style="text-transform:lowercase;" />
+              <div class="form-text">Solo letras, números y guiones bajos. Sin espacios.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Contraseña *</label>
+              <input type="password" class="form-control" id="nuevoUsuarioPass"
+                     placeholder="Mínimo 6 caracteres" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Confirmar contraseña *</label>
+              <input type="password" class="form-control" id="nuevoUsuarioConfirm"
+                     placeholder="Repite la contraseña" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="Configuracion.guardarNuevoUsuario()">
+            <i class="bi bi-check-lg me-1"></i>Crear Usuario
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase JS SDK (solo para usuarios) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/supabase.js"></script>
+  <script src="assets/js/db.js"></script>
+  <script src="assets/js/autosave.js"></script>
+  <script src="assets/js/totp.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/opciones.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/clientes.js"></script>
+  <script src="assets/js/proyectos.js"></script>
+  <script src="assets/js/pagos.js"></script>
+  <script src="assets/js/seguimiento.js"></script>
+  <script src="assets/js/dashboard.js"></script>
+  <script src="assets/js/configuracion.js"></script>
+  <script src="assets/js/finanzas.js"></script>
+  <script src="assets/js/tareas.js"></script>
+  <script src="assets/js/calculadora.js"></script>
+  <!-- Librerías para generación de PDF (locales, funcionan sin internet) -->
+  <script src="assets/vendor/jspdf.umd.min.js"></script>
+  <script src="assets/vendor/html2canvas.min.js"></script>
+  <!-- Módulo de impresión y PDF de especificaciones -->
+  <script src="assets/js/print.js"></script>
+  <!-- Módulo de recibos de pago -->
+  <script src="assets/js/recibos.js"></script>
+  <!-- Módulo de reporte financiero -->
+  <script src="assets/js/reporte-finanzas.js"></script>
+  <script src="assets/js/app.js"></script>
+
+  <script>
+    // ── Listeners dinámicos del formulario de proyecto ──────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+
+      // Cubierta "Otro"
+      document.getElementById('especCubierta')?.addEventListener('change', function() {
+        document.getElementById('especCubiertaOtroGroup')
+          .classList.toggle('d-none', this.value !== 'Otro');
+      });
+
+      // Ornamentación: mostrar sub-campos según el sistema seleccionado
+      document.getElementById('especOrnSistema')?.addEventListener('change', function() {
+        if (typeof Proyectos !== 'undefined') {
+          Proyectos._actualizarVisibilidadOrn(this.value);
+        }
+      });
+
+      // Ornamentación: color "Otro"
+      document.getElementById('especOrnColor')?.addEventListener('change', function() {
+        document.getElementById('especOrnColorOtroGroup')
+          .classList.toggle('d-none', this.value !== 'Otro');
+      });
+    });
+  </script>
+  <!-- ══════════════════════════════════════════
+       BÚSQUEDA GLOBAL
+  ══════════════════════════════════════════ -->
+  <div id="searchOverlay" style="display:none;position:fixed;inset:0;z-index:9999;
+       background:rgba(10,22,40,0.7);backdrop-filter:blur(6px);
+       align-items:flex-start;justify-content:center;padding-top:80px;">
+
+    <div style="width:100%;max-width:620px;margin:0 16px;animation:zoomIn 0.2s ease both;">
+
+      <!-- Input de búsqueda -->
+      <div style="background:white;border-radius:18px;overflow:hidden;
+                  box-shadow:0 32px 80px rgba(0,0,0,0.4);">
+        <div class="d-flex align-items-center px-4 py-3 border-bottom">
+          <i class="bi bi-search text-muted me-3 fs-5"></i>
+          <input type="text" id="globalSearchInput"
+                 placeholder="Buscar clientes, proyectos, pagos..."
+                 style="border:none;outline:none;flex:1;font-size:16px;font-weight:500;color:#1e293b;"
+                 autocomplete="off" />
+          <kbd style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;
+                      padding:2px 8px;font-size:11px;color:#64748b;white-space:nowrap;">ESC</kbd>
+        </div>
+
+        <!-- Resultados -->
+        <div id="globalSearchResults"
+             style="max-height:420px;overflow-y:auto;padding:8px 0;">
+          <!-- Se llena dinámicamente -->
+          <div class="text-center py-5 text-muted" id="searchPlaceholder">
+            <i class="bi bi-search d-block mb-2 opacity-25" style="font-size:36px;"></i>
+            <div class="small fw-semibold">Escribe para buscar</div>
+            <div style="font-size:11px;margin-top:4px;">Clientes · Proyectos · Pagos pendientes</div>
+          </div>
+        </div>
+
+        <!-- Footer con atajos -->
+        <div class="d-flex align-items-center justify-content-between px-4 py-2 border-top"
+             style="background:#f8fafc;">
+          <div class="d-flex gap-3" style="font-size:11px;color:#94a3b8;">
+            <span><kbd style="background:#e2e8f0;border-radius:4px;padding:1px 6px;font-size:10px;">↑↓</kbd> Navegar</span>
+            <span><kbd style="background:#e2e8f0;border-radius:4px;padding:1px 6px;font-size:10px;">Enter</kbd> Abrir</span>
+            <span><kbd style="background:#e2e8f0;border-radius:4px;padding:1px 6px;font-size:10px;">ESC</kbd> Cerrar</span>
+          </div>
+          <span style="font-size:11px;color:#94a3b8;">
+            <kbd style="background:#e2e8f0;border-radius:4px;padding:1px 6px;font-size:10px;">Ctrl+K</kbd> para abrir
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       CALCULADORA / COTIZADOR FLOTANTE
+  ══════════════════════════════════════════ -->
+  <button id="calcFAB" onclick="Calculadora.toggle()"
+          style="position:fixed;bottom:24px;right:24px;z-index:9990;width:56px;height:56px;
+                 border-radius:50%;border:none;background:linear-gradient(135deg,#2d6a9f,#1a3c5e);
+                 color:white;font-size:22px;box-shadow:0 6px 24px rgba(45,106,159,0.4);
+                 cursor:pointer;transition:transform 0.2s;display:flex;align-items:center;justify-content:center;"
+          onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform=''"
+          title="Calculadora / Cotizador">
+    <i class="bi bi-calculator-fill"></i>
+  </button>
+
+  <div id="calcPanel" class="d-none"
+       style="position:fixed;bottom:90px;right:24px;z-index:9991;width:340px;
+              border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);
+              background:white;border:1px solid #e2e8f0;">
+
+    <!-- Tabs -->
+    <div style="display:flex;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+      <button id="calcTabCalc" class="active" onclick="Calculadora.setTab('calculadora')"
+              style="flex:1;padding:10px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;
+                     border-bottom:2px solid transparent;transition:all 0.2s;">
+        🧮 Calculadora
+      </button>
+      <button id="calcTabCot" onclick="Calculadora.setTab('cotizador')"
+              style="flex:1;padding:10px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;
+                     border-bottom:2px solid transparent;transition:all 0.2s;">
+        🏠 Cotizador
+      </button>
+    </div>
+
+    <!-- Body: Calculadora -->
+    <div id="calcBodyCalc" style="padding:16px;">
+      <div id="calcDisplay" style="background:#1e293b;color:#10b981;font-size:28px;font-weight:700;
+                                    text-align:right;padding:16px 20px;border-radius:12px;margin-bottom:12px;
+                                    font-family:monospace;min-height:60px;display:flex;align-items:center;
+                                    justify-content:flex-end;word-break:break-all;">0</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+        <button onclick="Calculadora.clear()" class="calc-btn calc-btn-fn">C</button>
+        <button onclick="Calculadora.backspace()" class="calc-btn calc-btn-fn">⌫</button>
+        <button onclick="Calculadora.percent()" class="calc-btn calc-btn-fn">%</button>
+        <button onclick="Calculadora.operador('/')" class="calc-btn calc-btn-op">÷</button>
+        <button onclick="Calculadora.input('7')" class="calc-btn">7</button>
+        <button onclick="Calculadora.input('8')" class="calc-btn">8</button>
+        <button onclick="Calculadora.input('9')" class="calc-btn">9</button>
+        <button onclick="Calculadora.operador('*')" class="calc-btn calc-btn-op">×</button>
+        <button onclick="Calculadora.input('4')" class="calc-btn">4</button>
+        <button onclick="Calculadora.input('5')" class="calc-btn">5</button>
+        <button onclick="Calculadora.input('6')" class="calc-btn">6</button>
+        <button onclick="Calculadora.operador('-')" class="calc-btn calc-btn-op">−</button>
+        <button onclick="Calculadora.input('1')" class="calc-btn">1</button>
+        <button onclick="Calculadora.input('2')" class="calc-btn">2</button>
+        <button onclick="Calculadora.input('3')" class="calc-btn">3</button>
+        <button onclick="Calculadora.operador('+')" class="calc-btn calc-btn-op">+</button>
+        <button onclick="Calculadora.input('0')" class="calc-btn" style="grid-column:span 2;">0</button>
+        <button onclick="Calculadora.input('.')" class="calc-btn">.</button>
+        <button onclick="Calculadora.calculate()" class="calc-btn calc-btn-eq">=</button>
+      </div>
+    </div>
+
+    <!-- Body: Cotizador -->
+    <div id="calcBodyCot" class="d-none" style="padding:16px;max-height:420px;overflow-y:auto;">
+      <!-- Tipo selector -->
+      <div style="display:flex;gap:6px;margin-bottom:12px;">
+        <button id="cotBtn1p" class="active" onclick="Calculadora.setCotTipo('1piso')" class="calc-cot-tab">1 Piso</button>
+        <button id="cotBtn2p" onclick="Calculadora.setCotTipo('2pisos')" class="calc-cot-tab">2 Pisos</button>
+      </div>
+
+      <!-- 1 Piso -->
+      <div id="cotCampos1p">
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <input type="number" id="cot1pM2" placeholder="m²" oninput="Calculadora.calcularCotizacion()" class="calc-input" style="width:40%;" />
+          <span style="align-self:center;font-weight:700;color:#64748b;">×</span>
+          <input type="number" id="cot1pValor" placeholder="$/m²" oninput="Calculadora.calcularCotizacion()" class="calc-input" style="width:55%;" />
+        </div>
+      </div>
+
+      <!-- 2 Pisos -->
+      <div id="cotCampos2p" class="d-none">
+        <div class="calc-label">Primer piso</div>
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <input type="number" id="cot2pP1M2" placeholder="m²" oninput="Calculadora.calcularCotizacion()" class="calc-input" style="width:40%;" />
+          <span style="align-self:center;font-weight:700;color:#64748b;">×</span>
+          <input type="number" id="cot2pP1Valor" placeholder="$/m²" oninput="Calculadora.calcularCotizacion()" class="calc-input" style="width:55%;" />
+        </div>
+        <div class="calc-label">Segundo piso</div>
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <input type="number" id="cot2pP2M2" placeholder="m²" oninput="Calculadora.calcularCotizacion()" class="calc-input" style="width:40%;" />
+          <span style="align-self:center;font-weight:700;color:#64748b;">×</span>
+          <input type="number" id="cot2pP2Valor" placeholder="$/m²" oninput="Calculadora.calcularCotizacion()" class="calc-input" style="width:55%;" />
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <input type="number" id="cot2pPlancha" placeholder="Plancha $" oninput="Calculadora.calcularCotizacion()" class="calc-input" style="width:50%;" />
+          <input type="number" id="cot2pEscaleras" placeholder="Escaleras $" oninput="Calculadora.calcularCotizacion()" class="calc-input" style="width:50%;" />
+        </div>
+      </div>
+
+      <!-- Placa (ambos) -->
+      <input type="number" id="cotPlaca" placeholder="Placa de cimentación $ (opcional)" oninput="Calculadora.calcularCotizacion()" class="calc-input" style="width:100%;margin-bottom:12px;" />
+
+      <!-- Total -->
+      <div style="background:#1e293b;border-radius:12px;padding:12px 16px;margin-bottom:10px;">
+        <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Total</div>
+        <div id="cotTotal" style="font-size:22px;font-weight:800;color:#10b981;font-family:monospace;">$0</div>
+      </div>
+
+      <!-- Operación manual -->
+      <div style="display:flex;gap:6px;margin-bottom:12px;">
+        <input type="text" id="cotOperacion" placeholder="+500000 ó -100000" class="calc-input" style="flex:1;"
+               onkeydown="if(event.key==='Enter') Calculadora.aplicarOperacion();" />
+        <button onclick="Calculadora.aplicarOperacion()" style="border:none;background:#2d6a9f;color:white;border-radius:8px;padding:6px 12px;font-weight:700;font-size:13px;cursor:pointer;">Aplicar</button>
+      </div>
+
+      <!-- Etapas de pago -->
+      <div style="background:#f8fafc;border-radius:10px;padding:10px 12px;border:1px solid #e2e8f0;">
+        <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:6px;">ETAPAS DE PAGO</div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+          <span>50% Firma:</span><span id="cotEtapa50" style="font-weight:700;color:#2d6a9f;">$0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+          <span>40% Materiales:</span><span id="cotEtapa40" style="font-weight:700;color:#f59e0b;">$0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;">
+          <span>10% Techo:</span><span id="cotEtapa10" style="font-weight:700;color:#10b981;">$0</span>
+        </div>
+      </div>
+
+      <!-- Limpiar -->
+      <button onclick="Calculadora.limpiarCotizador()" style="width:100%;margin-top:10px;border:none;background:#f1f5f9;color:#64748b;border-radius:8px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;">Limpiar cotización</button>
+    </div>
+  </div>
+
+</body>
+</html>
