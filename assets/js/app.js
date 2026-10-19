@@ -5,7 +5,23 @@
 // ── Módulo Expediente ─────────────────────────────────────────────────────────
 window.Expediente = {
 
-  async render(cliente, proyecto, pagos, seguimientos) {
+  // Estado del expediente abierto (soporta varios proyectos por cliente)
+  _cliente: null,
+  _proyectos: [],
+  _proyectoIdx: 0,
+
+  // Proyecto actualmente seleccionado en el tab "Proyecto"
+  get _proyectoActual() {
+    return this._proyectos[this._proyectoIdx] || null;
+  },
+
+  async render(cliente, proyectos, pagos, seguimientos, idx = 0) {
+    // Guardar estado para el selector de casas y los tabs
+    this._cliente     = cliente;
+    this._proyectos   = Array.isArray(proyectos) ? proyectos : (proyectos ? [proyectos] : []);
+    this._proyectoIdx = (idx >= 0 && idx < this._proyectos.length) ? idx : 0;
+    const proyecto    = this._proyectoActual;
+
     const session = Auth.getSession();
     const nombre   = UI.escapeHTML(cliente.nombre);
     const telefono = UI.escapeHTML(cliente.telefono);
@@ -77,8 +93,61 @@ window.Expediente = {
       </div>`;
   },
 
+  // Selector de casas (solo si el cliente tiene más de un proyecto)
+  _selectorProyectos(cliente) {
+    const proys = this._proyectos;
+    if (proys.length <= 1) return '';
+    const pills = proys.map((p, i) => {
+      const activo = i === this._proyectoIdx;
+      const etiqueta = p.modelo ? UI.escapeHTML(p.modelo) : `Casa ${i + 1}`;
+      return `
+        <button class="btn btn-sm ${activo ? 'btn-primary' : 'btn-outline-primary'} fw-semibold"
+                style="border-radius:20px;"
+                onclick="Expediente.seleccionarProyecto(${i})">
+          <i class="bi bi-house-door me-1"></i>Casa ${i + 1}
+          <span class="opacity-75 ms-1" style="font-size:11px;">· ${etiqueta}</span>
+        </button>`;
+    }).join('');
+    return `
+      <div class="col-12">
+        <div class="d-flex align-items-center flex-wrap gap-2 p-2 rounded-3"
+             style="background:#eff6ff;border:1px solid #bfdbfe;">
+          <span class="text-primary small fw-semibold me-1 ms-1">
+            <i class="bi bi-houses me-1"></i>${proys.length} proyectos:
+          </span>
+          ${pills}
+        </div>
+      </div>`;
+  },
+
+  // Cabecera con botón "Nuevo proyecto" (siempre permite agregar otra casa)
+  _barraNuevoProyecto(cliente) {
+    return `
+      <div class="col-12">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <span class="text-muted small">
+            <i class="bi bi-info-circle me-1"></i>Puedes registrar varias casas para este mismo cliente.
+          </span>
+          <button class="btn btn-sm btn-success fw-semibold" onclick="Proyectos.abrirModalNuevo('${cliente.id}')">
+            <i class="bi bi-plus-lg me-1"></i>Nuevo proyecto
+          </button>
+        </div>
+      </div>`;
+  },
+
+  // Cambiar de casa seleccionada y re-renderizar solo el tab Proyecto
+  async seleccionarProyecto(idx) {
+    if (idx < 0 || idx >= this._proyectos.length) return;
+    this._proyectoIdx = idx;
+    const content = document.getElementById('expedienteTabContent');
+    if (content) {
+      content.innerHTML = UI.spinner();
+      content.innerHTML = await this._tabProyecto(this._cliente, this._proyectoActual);
+    }
+  },
+
   async _tabProyecto(cliente, proyecto) {
-    if (!proyecto) {
+    if (this._proyectos.length === 0) {
       return `
         <div class="text-center py-5">
           <i class="bi bi-building fs-1 text-muted d-block mb-3 opacity-50"></i>
@@ -94,6 +163,9 @@ window.Expediente = {
 
     return `
       <div class="row g-4">
+
+        ${this._selectorProyectos(cliente)}
+        ${this._barraNuevoProyecto(cliente)}
 
         <!-- Fila superior: botones de acción siempre visibles -->
         <div class="col-12">
@@ -222,13 +294,44 @@ window.Expediente = {
   },
 
   async _tabPagos(clienteId, proyectoId) {
+    // Selector de casa dentro del tab de pagos (si hay más de un proyecto)
+    let selector = '';
+    if (this._proyectos.length > 1) {
+      const pills = this._proyectos.map((p, i) => {
+        const activo = i === this._proyectoIdx;
+        return `
+          <button class="btn btn-sm ${activo ? 'btn-primary' : 'btn-outline-primary'} fw-semibold"
+                  style="border-radius:20px;"
+                  onclick="Expediente.seleccionarProyectoPagos(${i})">
+            <i class="bi bi-house-door me-1"></i>Casa ${i + 1}
+          </button>`;
+      }).join('');
+      selector = `
+        <div class="d-flex align-items-center flex-wrap gap-2 p-2 mb-3 rounded-3"
+             style="background:#eff6ff;border:1px solid #bfdbfe;">
+          <span class="text-primary small fw-semibold me-1 ms-1"><i class="bi bi-houses me-1"></i>Pagos de:</span>
+          ${pills}
+        </div>`;
+    }
     return `
       <div>
         <div class="d-flex align-items-center justify-content-between mb-3">
           <h6 class="fw-bold mb-0"><i class="bi bi-cash-stack me-2 text-primary"></i>Etapas de Pago</h6>
         </div>
+        ${selector}
         ${await Pagos.renderEtapasExpediente(clienteId, proyectoId)}
       </div>`;
+  },
+
+  // Cambiar de casa desde el tab de pagos y re-renderizar ese tab
+  async seleccionarProyectoPagos(idx) {
+    if (idx < 0 || idx >= this._proyectos.length) return;
+    this._proyectoIdx = idx;
+    const content = document.getElementById('expedienteTabContent');
+    if (content) {
+      content.innerHTML = UI.spinner();
+      content.innerHTML = await this._tabPagos(this._cliente?.id, this._proyectoActual?.id);
+    }
   },
 
   async _tabSeguimiento(clienteId) {
@@ -532,7 +635,7 @@ window.Expediente = {
     }
   },
 
-  bindEvents(clienteId, proyecto) {
+  bindEvents(clienteId) {
     document.querySelectorAll('#expedienteTabs .nav-link').forEach(tab => {
       tab.addEventListener('click', async (e) => {
         e.preventDefault();
@@ -545,9 +648,9 @@ window.Expediente = {
 
         if (tabName === 'proyecto') {
           const cliente = await DB.get(DB.STORES.clientes, clienteId);
-          content.innerHTML = await this._tabProyecto(cliente, proyecto);
+          content.innerHTML = await this._tabProyecto(cliente, this._proyectoActual);
         } else if (tabName === 'pagos') {
-          content.innerHTML = await this._tabPagos(clienteId, proyecto?.id);
+          content.innerHTML = await this._tabPagos(clienteId, this._proyectoActual?.id);
         } else if (tabName === 'seguimiento') {
           content.innerHTML = await this._tabSeguimiento(clienteId);
         } else if (tabName === 'historial') {

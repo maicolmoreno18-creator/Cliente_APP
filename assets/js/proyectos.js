@@ -297,7 +297,7 @@ window.Proyectos = {
             <div class="d-flex gap-2 mt-auto">
               <button class="btn btn-primary btn-sm flex-grow-1 fw-semibold"
                       style="border-radius:10px;"
-                      onclick="Clientes.abrirExpediente('${p.clienteId}')">
+                      onclick="Clientes.abrirExpediente('${p.clienteId}','${p.id}')">
                 <i class="bi bi-folder2-open me-1"></i>Ver Expediente
               </button>
               <button class="btn btn-outline-secondary btn-sm"
@@ -669,12 +669,13 @@ window.Proyectos = {
     if (App.currentPage === 'pagos')     await Pagos.render();
     if (App.currentPage === 'dashboard') await Dashboard.render();
 
-    // Reabrir expediente con datos frescos
+    // Reabrir expediente con datos frescos, destacando la casa recién guardada
     if (clienteId) {
+      const proyectoGuardadoId = data.id;
       const modalProyEl = document.getElementById('modalProyecto');
       modalProyEl.addEventListener('hidden.bs.modal', async function reabrirExpediente() {
         modalProyEl.removeEventListener('hidden.bs.modal', reabrirExpediente);
-        await Clientes.abrirExpediente(clienteId);
+        await Clientes.abrirExpediente(clienteId, proyectoGuardadoId);
       }, { once: true });
     }
   },

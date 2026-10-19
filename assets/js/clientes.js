@@ -360,7 +360,8 @@ window.Clientes = {
   },
 
   // ── Abrir expediente completo ─────────────────────────────────────────────
-  async abrirExpediente(clienteId) {
+  //    proyectoIdDestacado (opcional): abre el expediente mostrando esa casa
+  async abrirExpediente(clienteId, proyectoIdDestacado = null) {
     const cliente = await DB.get(DB.STORES.clientes, clienteId);
     if (!cliente) return;
 
@@ -371,13 +372,22 @@ window.Clientes = {
     const pagos        = await DB.getByIndex(DB.STORES.pagos, 'clienteId', clienteId);
     const seguimientos = await DB.getByIndex(DB.STORES.seguimientos, 'clienteId', clienteId);
 
-    const proyecto = proyectos[0] || null;
+    // Ordenar por fecha de creación para que "Casa 1" sea la más antigua
+    proyectos.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+
+    // Si se pidió abrir sobre un proyecto específico (ej. desde la tarjeta de
+    // la 2ª casa), seleccionarlo; si no, el primero.
+    let idx = 0;
+    if (proyectoIdDestacado) {
+      const i = proyectos.findIndex(p => p.id === proyectoIdDestacado);
+      if (i >= 0) idx = i;
+    }
 
     document.getElementById('expedienteContent').innerHTML =
-      await Expediente.render(cliente, proyecto, pagos, seguimientos);
+      await Expediente.render(cliente, proyectos, pagos, seguimientos, idx);
 
     UI.openModal('modalExpediente');
-    Expediente.bindEvents(clienteId, proyecto);
+    Expediente.bindEvents(clienteId);
   }
 };
 
