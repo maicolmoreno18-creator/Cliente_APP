@@ -1,8 +1,8 @@
 /* ============================================
-   ClienteAPP — Service Worker (cache v31)
+   ClienteAPP — Service Worker (cache v32)
    ============================================ */
 
-const CACHE_NAME    = 'clienteapp-v31';
+const CACHE_NAME    = 'clienteapp-v32';
 const CACHE_STATIC  = [
   './',
   './index.html',
@@ -30,14 +30,16 @@ const CACHE_STATIC  = [
   './assets/js/app.js',
   './assets/vendor/jspdf.umd.min.js',
   './assets/vendor/html2canvas.min.js',
+  './assets/vendor/bootstrap-icons/bootstrap-icons.min.css',
+  './assets/vendor/bootstrap-icons/fonts/bootstrap-icons.woff2',
+  './assets/vendor/bootstrap-icons/fonts/bootstrap-icons.woff',
   './assets/img/icon-192.svg',
   './assets/img/icon-192.png',
   './assets/img/icon-512.png',
   './assets/img/logo-construsoluciones.png',
   './assets/img/sello-construsoluciones.png',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js',
-  'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css'
+  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js'
 ];
 
 // ── Instalación ───────────────────────────────────────────────────────────────
@@ -114,11 +116,15 @@ self.addEventListener('fetch', (event) => {
       // Sin conexión → usar la copia en caché
       return caches.match(event.request).then((cached) => {
         if (cached) return cached;
-        // Fallback offline: devolver index.html para navegación HTML
-        if (event.request.headers.get('accept')?.includes('text/html')) {
-          return caches.match('./index.html');
-        }
-        return new Response('', { status: 408, statusText: 'Offline' });
+        // Reintentar ignorando el query string (ej. fuentes .woff2?hash)
+        return caches.match(event.request, { ignoreSearch: true }).then((cachedNoQuery) => {
+          if (cachedNoQuery) return cachedNoQuery;
+          // Fallback offline: devolver index.html para navegación HTML
+          if (event.request.headers.get('accept')?.includes('text/html')) {
+            return caches.match('./index.html');
+          }
+          return new Response('', { status: 408, statusText: 'Offline' });
+        });
       });
     })
   );
