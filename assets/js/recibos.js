@@ -82,7 +82,7 @@ window.Recibos = {
   _buildHTML(d, conSello = false) {
     const esc = _escR;
     const fmt = v => (v || v === 0)
-      ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(v)
+      ? new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
       : '—';
 
     const especFilas = d.especItems.length > 0

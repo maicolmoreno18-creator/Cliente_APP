@@ -165,10 +165,7 @@ window.Pagos = {
 
   // ── Cards de resumen ──────────────────────────────────────────────────────
   _resumenCards(pagos) {
-    const totalEsperado = pagos.reduce((s, p) => s + (p.valorTotal || 0), 0);
-    const totalRecibido = pagos.reduce((s, p) => s + (p.valorPagado || 0), 0);
-    const pendiente     = totalEsperado - totalRecibido;
-    const porcentaje    = totalEsperado > 0 ? Math.round(totalRecibido / totalEsperado * 100) : 0;
+    const { total: totalEsperado, pagado: totalRecibido, pendiente, pct: porcentaje } = UI.calcularSaldo(pagos);
 
     const cards = [
       {
@@ -218,9 +215,7 @@ window.Pagos = {
   _clientePagosCard(cliente, pagos) {
     if (!cliente) return '';
     const nombre = UI.escapeHTML(cliente.nombre);
-    const totalEsperado = pagos.reduce((s, p) => s + (p.valorTotal || 0), 0);
-    const totalPagado   = pagos.reduce((s, p) => s + (p.valorPagado || 0), 0);
-    const pct = totalEsperado > 0 ? Math.round(totalPagado / totalEsperado * 100) : 0;
+    const { total: totalEsperado, pagado: totalPagado, pct } = UI.calcularSaldo(pagos);
     const colorBarra = pct === 100 ? '#10b981' : pct > 50 ? '#2d6a9f' : '#f59e0b';
 
     return `
@@ -353,9 +348,7 @@ window.Pagos = {
       </div>`;
     }
 
-    const totalEsperado = proyPagos.reduce((s, p) => s + (p.valorTotal || 0), 0);
-    const totalPagado   = proyPagos.reduce((s, p) => s + (p.valorPagado || 0), 0);
-    const pct = totalEsperado > 0 ? Math.round(totalPagado / totalEsperado * 100) : 0;
+    const { total: totalEsperado, pagado: totalPagado, pct } = UI.calcularSaldo(proyPagos);
     const colorBarra = pct === 100 ? '#10b981' : pct > 60 ? '#3b82f6' : pct > 0 ? '#f59e0b' : '#e2e8f0';
 
     return `

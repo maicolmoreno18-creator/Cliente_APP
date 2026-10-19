@@ -1,8 +1,8 @@
 /* ============================================
-   ClienteAPP — Service Worker v4
+   ClienteAPP — Service Worker (cache v30)
    ============================================ */
 
-const CACHE_NAME    = 'clienteapp-v27';
+const CACHE_NAME    = 'clienteapp-v30';
 const CACHE_STATIC  = [
   './',
   './index.html',

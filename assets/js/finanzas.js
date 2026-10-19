@@ -9,6 +9,14 @@ function getBaseMensual() {
   return (typeof v === 'number' && v > 0) ? v : 500000;
 }
 
+// Saldo de un préstamo dado el conjunto de abonos (fuente única de verdad)
+function saldoPrestamo(prestamo, abonos) {
+  const abonado = (abonos || [])
+    .filter(a => a.prestamoId === prestamo.id)
+    .reduce((s, a) => s + (a.monto || 0), 0);
+  return { abonado, saldo: Math.max(0, (prestamo.monto || 0) - abonado) };
+}
+
 window.Finanzas = {
 
   // ── Renderizar página principal ──────────────────────────────────────────
@@ -26,7 +34,6 @@ window.Finanzas = {
     const comisionPct = (Opciones.get().comisionPct || 5) / 100;
 
     const clienteMap  = Object.fromEntries(clientes.map(c => [c.id, c]));
-    const proyectoMap = Object.fromEntries(proyectos.map(p => [p.id, p]));
 
     // Separar registros por tipo
     const cobrosComision = registros.filter(r => r.tipo === 'comision');
@@ -57,7 +64,6 @@ window.Finanzas = {
 
     // ── Métricas de base mensual ────────────────────────────────────────────
     const totalBases     = bases.reduce((s, r) => s + (r.monto || 0), 0);
-    const basesAbonadas  = bases.filter(r => r.destino === 'prestamo').reduce((s, r) => s + (r.monto || 0), 0);
     const basesDisponibles = bases.filter(r => r.destino === 'disponible').reduce((s, r) => s + (r.monto || 0), 0);
 
     // ── Balance disponible ──────────────────────────────────────────────────
@@ -229,7 +235,7 @@ window.Finanzas = {
           <tr>
             <th class="small">Cliente / Proyecto</th>
             <th class="small text-end">Valor Casa</th>
-            <th class="small text-end">Comisión (5%)</th>
+            <th class="small text-end">Comisión (${Opciones.get().comisionPct || 5}%)</th>
             <th class="small text-end">Cobrado</th>
             <th class="small text-end">Pendiente</th>
             <th class="small text-center">Estado</th>
@@ -246,9 +252,9 @@ window.Finanzas = {
             const estadoCls    = pct >= 100 ? 'success' : pct > 0 ? 'warning' : 'secondary';
             const estadoLabel  = pct >= 100 ? 'Cobrada' : pct > 0 ? 'Parcial' : 'Pendiente';
 
-            return `<tr>
+            return `<tr style="cursor:pointer;" onclick="Finanzas.abrirDetalleComision('${p.id}')" title="Ver historial y editar cobros">
               <td>
-                <div class="fw-semibold small">${cliente ? UI.escapeHTML(cliente.nombre) : '—'}</div>
+                <div class="fw-semibold small">${cliente ? UI.escapeHTML(cliente.nombre) : '—'} <i class="bi bi-box-arrow-up-right text-muted ms-1" style="font-size:10px;"></i></div>
                 <div class="text-muted" style="font-size:11px;">${UI.escapeHTML(p.modelo)} · ${p.area}m²</div>
                 <div class="progress mt-1" style="height:3px;width:80px;">
                   <div class="progress-bar bg-${estadoCls}" style="width:${pct}%;"></div>
@@ -312,8 +318,7 @@ window.Finanzas = {
     return `<div class="row g-3">
       ${prestamos.map(p => {
         const abonosPrestamo = abonos.filter(a => a.prestamoId === p.id);
-        const totalAbonado   = abonosPrestamo.reduce((s, a) => s + (a.monto || 0), 0);
-        const saldo          = Math.max(0, p.monto - totalAbonado);
+        const { abonado: totalAbonado, saldo } = saldoPrestamo(p, abonos);
         const pct            = p.monto > 0 ? Math.round(totalAbonado / p.monto * 100) : 0;
         const pagado         = saldo === 0;
 
@@ -402,6 +407,7 @@ window.Finanzas = {
     });
 
     const sel = document.getElementById('comisionProyectoSelect');
+    if (!sel) { UI.toast('No se pudo abrir el formulario de comisión', 'danger'); return; }
     sel.innerHTML = '<option value="">Selecciona un proyecto...</option>' +
       firmados.map(p => {
         const c = clienteMap[p.clienteId];
@@ -495,10 +501,10 @@ window.Finanzas = {
     const abonos     = registros.filter(r => r.tipo === 'abono');
 
     const sel = document.getElementById('abonoPrestamoSelect');
+    if (!sel) { UI.toast('No se pudo abrir el formulario de abono', 'danger'); return; }
     sel.innerHTML = '<option value="">Selecciona un préstamo...</option>' +
       prestamos.map(p => {
-        const totalAbonado = abonos.filter(a => a.prestamoId === p.id).reduce((s, a) => s + (a.monto || 0), 0);
-        const saldo = Math.max(0, p.monto - totalAbonado);
+        const { saldo } = saldoPrestamo(p, abonos);
         return `<option value="${p.id}" data-saldo="${saldo}" ${p.id === prestamoIdPreseleccionado ? 'selected' : ''}>
           ${UI.escapeHTML(p.descripcion)} — Saldo: ${UI.formatCurrency(saldo)}
         </option>`;
@@ -543,13 +549,12 @@ window.Finanzas = {
     // Limitante: no permitir abonar más del saldo pendiente
     const registros        = await DB.getAll(DB.STORES.finanzas);
     const prestamo         = registros.find(r => r.id === prestamoId);
-    const abonosExistentes = registros.filter(r => r.tipo === 'abono' && r.prestamoId === prestamoId);
-    const totalAbonado     = abonosExistentes.reduce((s, a) => s + (a.monto || 0), 0);
-    const saldoPrestamo    = Math.max(0, (prestamo?.monto || 0) - totalAbonado);
+    const abonos           = registros.filter(r => r.tipo === 'abono');
+    const saldoDisponible  = saldoPrestamo(prestamo || { id: prestamoId, monto: 0 }, abonos).saldo;
 
-    if (monto > saldoPrestamo) {
+    if (monto > saldoDisponible) {
       UI.toast(
-        `El saldo pendiente es ${UI.formatCurrency(saldoPrestamo)}. No puedes abonar más de eso.`,
+        `El saldo pendiente es ${UI.formatCurrency(saldoDisponible)}. No puedes abonar más de eso.`,
         'warning', 6000
       );
       return;
@@ -576,15 +581,12 @@ window.Finanzas = {
     const abonos    = registros.filter(r => r.tipo === 'abono');
 
     // Préstamos con saldo pendiente
-    const conSaldo = prestamos.filter(p => {
-      const totalAbonado = abonos.filter(a => a.prestamoId === p.id).reduce((s, a) => s + (a.monto || 0), 0);
-      return p.monto - totalAbonado > 0;
-    });
+    const conSaldo = prestamos.filter(p => saldoPrestamo(p, abonos).saldo > 0);
 
     const sel = document.getElementById('basePrestamoSelect');
+    if (!sel) { UI.toast('No se pudo abrir el formulario de base', 'danger'); return; }
     sel.innerHTML = conSaldo.map(p => {
-      const totalAbonado = abonos.filter(a => a.prestamoId === p.id).reduce((s, a) => s + (a.monto || 0), 0);
-      const saldo = p.monto - totalAbonado;
+      const { saldo } = saldoPrestamo(p, abonos);
       return `<option value="${p.id}" data-saldo="${saldo}">${UI.escapeHTML(p.descripcion)} — Saldo: ${UI.formatCurrency(saldo)}</option>`;
     }).join('');
 
@@ -647,14 +649,13 @@ window.Finanzas = {
       // Calcular saldo real del préstamo seleccionado
       const registros  = await DB.getAll(DB.STORES.finanzas);
       const prestamo   = registros.find(r => r.id === prestamoId);
-      const abonosExistentes = registros.filter(r => r.tipo === 'abono' && r.prestamoId === prestamoId);
-      const totalAbonado = abonosExistentes.reduce((s, a) => s + (a.monto || 0), 0);
-      const saldoPrestamo = Math.max(0, (prestamo?.monto || 0) - totalAbonado);
+      const abonos     = registros.filter(r => r.tipo === 'abono');
+      const saldoDisponible = saldoPrestamo(prestamo || { id: prestamoId, monto: 0 }, abonos).saldo;
 
       // Limitante: no permitir abonar más del saldo pendiente
-      if (monto > saldoPrestamo) {
+      if (monto > saldoDisponible) {
         UI.toast(
-          `El saldo pendiente es ${UI.formatCurrency(saldoPrestamo)}. No puedes abonar más de eso.`,
+          `El saldo pendiente es ${UI.formatCurrency(saldoDisponible)}. No puedes abonar más de eso.`,
           'warning', 6000
         );
         return;
@@ -684,10 +685,7 @@ window.Finanzas = {
 
       // Calcular saldo de cada préstamo y ordenar de menor a mayor
       const conSaldo = prestamos
-        .map(p => {
-          const totalAbonado = abonos.filter(a => a.prestamoId === p.id).reduce((s, a) => s + (a.monto || 0), 0);
-          return { ...p, saldo: Math.max(0, p.monto - totalAbonado) };
-        })
+        .map(p => ({ ...p, saldo: saldoPrestamo(p, abonos).saldo }))
         .filter(p => p.saldo > 0)
         .sort((a, b) => a.saldo - b.saldo); // menor deuda primero
 
@@ -827,6 +825,248 @@ window.Finanzas = {
 
     bootstrap.Modal.getInstance(document.getElementById(modalId))?.hide();
     UI.toast('Abono actualizado', 'success');
+    await this.render();
+  },
+
+  // ── Detalle de comisión por proyecto (ventana con historial) ──────────────
+  async abrirDetalleComision(proyectoId) {
+    const [proyectos, clientes, registros] = await Promise.all([
+      DB.getAll(DB.STORES.proyectos),
+      DB.getAll(DB.STORES.clientes),
+      DB.getAll(DB.STORES.finanzas)
+    ]);
+    const proyecto = proyectos.find(p => p.id === proyectoId);
+    if (!proyecto) { UI.toast('No se encontró el proyecto', 'danger'); return; }
+    const cliente = clientes.find(c => c.id === proyecto.clienteId);
+
+    const id = 'modalDetalleComision';
+    // Si ya existe (re-render tras edición), quitarlo antes de recrear
+    document.getElementById(id)?.remove();
+
+    const html = `
+      <div class="modal fade" id="${id}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:560px;">
+          <div class="modal-content border-0 shadow-lg" style="border-radius:20px;overflow:hidden;">
+            <div class="modal-header border-0 py-4 px-4"
+                 style="background:linear-gradient(135deg,#1a4a2e,#2d8a4f);color:white;">
+              <div class="d-flex align-items-center gap-3 flex-grow-1">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle"
+                     style="width:44px;height:44px;background:rgba(255,255,255,.15);">
+                  <i class="bi bi-percent text-white fs-5"></i>
+                </div>
+                <div>
+                  <h6 class="text-white mb-0 fw-bold">${cliente ? UI.escapeHTML(cliente.nombre) : '—'}</h6>
+                  <small class="text-white-50">${UI.escapeHTML(proyecto.modelo || '')} · ${proyecto.area || '?'}m²</small>
+                </div>
+              </div>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="${id}-body"></div>
+            <div class="modal-footer border-0 pt-0 pb-4 px-4 gap-2 flex-wrap">
+              <button class="btn btn-success btn-sm fw-semibold me-auto" onclick="Finanzas.abrirModalCobroDesdeDetalle('${proyectoId}')">
+                <i class="bi bi-plus-lg me-1"></i>Registrar cobro
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" onclick="ReporteFinanzas.imprimirComision('${proyectoId}')">
+                <i class="bi bi-printer me-1"></i>Imprimir
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="ReporteFinanzas.descargarComisionPDF('${proyectoId}')">
+                <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+    const el = document.getElementById(id);
+    this._renderDetalleComisionBody(proyectoId);
+    const modal = new bootstrap.Modal(el);
+    modal.show();
+    el.addEventListener('hidden.bs.modal', () => el.remove(), { once: true });
+  },
+
+  // ── Cuerpo del modal de detalle (se re-renderiza tras editar/eliminar) ─────
+  async _renderDetalleComisionBody(proyectoId) {
+    const body = document.getElementById('modalDetalleComision-body');
+    if (!body) return;
+
+    const [proyectos, registros] = await Promise.all([
+      DB.getAll(DB.STORES.proyectos),
+      DB.getAll(DB.STORES.finanzas)
+    ]);
+    const proyecto = proyectos.find(p => p.id === proyectoId);
+    if (!proyecto) return;
+
+    const pctComision   = (Opciones.get().comisionPct || 5) / 100;
+    const pctLabel      = Opciones.get().comisionPct || 5;
+    const comisionTotal = (proyecto.precio || 0) * pctComision;
+    const cobros        = registros.filter(r => r.tipo === 'comision' && r.proyectoId === proyectoId)
+                                   .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    const cobrado       = cobros.reduce((s, c) => s + (c.monto || 0), 0);
+    const pendiente     = comisionTotal - cobrado;
+    const pct           = comisionTotal > 0 ? Math.min(100, Math.round(cobrado / comisionTotal * 100)) : 0;
+
+    const filas = cobros.length > 0
+      ? cobros.map(c => `
+          <div class="d-flex align-items-center gap-2 py-2 border-bottom">
+            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle"
+                 style="width:32px;height:32px;background:#d1fae5;">
+              <i class="bi bi-cash-coin text-success" style="font-size:14px;"></i>
+            </div>
+            <div class="flex-grow-1">
+              <div class="fw-semibold small text-success">${UI.formatCurrency(c.monto)}</div>
+              <div class="text-muted" style="font-size:11px;">
+                ${UI.formatDate(c.fecha)}${c.observaciones ? ' · ' + UI.escapeHTML(c.observaciones) : ''}
+              </div>
+            </div>
+            <div class="d-flex gap-1 flex-shrink-0">
+              <button class="btn btn-sm btn-outline-success py-0 px-1" style="font-size:11px;line-height:1.4;"
+                      onclick="Finanzas.editarCobroComision('${c.id}')" title="Editar cobro">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size:11px;line-height:1.4;"
+                      onclick="Finanzas.eliminarCobroComision('${c.id}','${proyectoId}')" title="Eliminar cobro">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>`).join('')
+      : `<div class="text-center py-4 text-muted">
+           <i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>
+           <small>Sin cobros registrados para este proyecto</small>
+         </div>`;
+
+    body.innerHTML = `
+      <div class="row g-2 mb-3 text-center">
+        <div class="col-4">
+          <div class="p-2 rounded-3" style="background:#f0fdf4;">
+            <div class="fw-bold small text-success">${UI.formatCurrency(comisionTotal)}</div>
+            <div class="text-muted" style="font-size:10px;">Comisión ${pctLabel}%</div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="p-2 rounded-3" style="background:#eff6ff;">
+            <div class="fw-bold small text-primary">${UI.formatCurrency(cobrado)}</div>
+            <div class="text-muted" style="font-size:10px;">Cobrado</div>
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="p-2 rounded-3" style="background:${pendiente > 0 ? '#fffbeb' : '#f1f5f9'};">
+            <div class="fw-bold small ${pendiente > 0 ? 'text-warning' : 'text-muted'}">${UI.formatCurrency(pendiente)}</div>
+            <div class="text-muted" style="font-size:10px;">Pendiente</div>
+          </div>
+        </div>
+      </div>
+      <div class="progress mb-1" style="height:6px;border-radius:3px;">
+        <div class="progress-bar ${pct >= 100 ? 'bg-success' : 'bg-warning'}" style="width:${pct}%;"></div>
+      </div>
+      <div class="d-flex justify-content-between mb-3">
+        <small class="text-muted">Valor casa: ${UI.formatCurrency(proyecto.precio)}</small>
+        <small class="text-muted">${pct}% cobrado</small>
+      </div>
+      <div class="fw-semibold small text-uppercase text-muted mb-1" style="letter-spacing:.5px;">
+        Historial de cobros (${cobros.length})
+      </div>
+      ${filas}`;
+  },
+
+  // ── Registrar cobro desde el detalle (cierra detalle y abre modal) ─────────
+  async abrirModalCobroDesdeDetalle(proyectoId) {
+    bootstrap.Modal.getInstance(document.getElementById('modalDetalleComision'))?.hide();
+    await this.abrirModalComision();
+    // Preseleccionar el proyecto en el select
+    const sel = document.getElementById('comisionProyectoSelect');
+    if (sel) { sel.value = proyectoId; sel.onchange?.(); }
+  },
+
+  // ── Editar un cobro de comisión ────────────────────────────────────────────
+  async editarCobroComision(cobroId) {
+    const registros = await DB.getAll(DB.STORES.finanzas);
+    const cobro = registros.find(r => r.id === cobroId && r.tipo === 'comision');
+    if (!cobro) { UI.toast('No se encontró el cobro', 'danger'); return; }
+
+    const id = 'modalEditCobroCom-' + Date.now();
+    const html = `
+      <div class="modal fade" id="${id}" tabindex="-1">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+          <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header border-0 py-3 px-4"
+                 style="background:linear-gradient(135deg,#1a4a2e,#2d8a4f);color:white;">
+              <h6 class="fw-bold mb-0 text-white">
+                <i class="bi bi-pencil me-2"></i>Editar Cobro
+              </h6>
+              <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label fw-semibold small">Monto *</label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" id="${id}-monto"
+                           value="${cobro.monto || ''}" min="1" required />
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label fw-semibold small">Fecha *</label>
+                  <input type="date" class="form-control form-control-sm" id="${id}-fecha"
+                         value="${cobro.fecha || ''}" required />
+                </div>
+                <div class="col-12">
+                  <label class="form-label fw-semibold small">Observaciones</label>
+                  <input type="text" class="form-control form-control-sm" id="${id}-obs"
+                         value="${UI.escapeHTML(cobro.observaciones || '')}"
+                         placeholder="Nota del cobro..." />
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 pb-4 px-4 gap-2">
+              <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+              <button class="btn btn-success btn-sm fw-semibold"
+                      onclick="Finanzas.guardarEdicionCobro('${cobroId}','${id}')">
+                <i class="bi bi-check-lg me-1"></i>Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+    const el = document.getElementById(id);
+    const modal = new bootstrap.Modal(el);
+    modal.show();
+    el.addEventListener('hidden.bs.modal', () => el.remove(), { once: true });
+  },
+
+  // ── Guardar edición de cobro de comisión ──────────────────────────────────
+  async guardarEdicionCobro(cobroId, modalId) {
+    const monto = parseFloat(document.getElementById(`${modalId}-monto`)?.value);
+    const fecha = document.getElementById(`${modalId}-fecha`)?.value;
+
+    if (!monto || monto <= 0 || !fecha) {
+      UI.toast('Monto y fecha son obligatorios', 'warning'); return;
+    }
+
+    const cobro = await DB.get(DB.STORES.finanzas, cobroId);
+    if (!cobro) return;
+    cobro.monto = monto;
+    cobro.fecha = fecha;
+    cobro.observaciones = document.getElementById(`${modalId}-obs`)?.value?.trim() || '';
+    await DB.put(DB.STORES.finanzas, cobro);
+
+    bootstrap.Modal.getInstance(document.getElementById(modalId))?.hide();
+    UI.toast('Cobro actualizado', 'success');
+    // Refrescar tanto el detalle abierto como la página de fondo
+    await this._renderDetalleComisionBody(cobro.proyectoId);
+    await this.render();
+  },
+
+  // ── Eliminar un cobro de comisión (desde el detalle) ──────────────────────
+  async eliminarCobroComision(cobroId, proyectoId) {
+    const ok = await UI.confirm('¿Eliminar este cobro de comisión?', 'Eliminar');
+    if (!ok) return;
+    await DB.delete(DB.STORES.finanzas, cobroId);
+    UI.toast('Cobro eliminado', 'danger');
+    await this._renderDetalleComisionBody(proyectoId);
     await this.render();
   },
 

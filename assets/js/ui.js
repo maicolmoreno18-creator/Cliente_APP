@@ -344,6 +344,19 @@ window.UI = {
     }).format(value);
   },
 
+  // ── Calcular saldo de un conjunto de etapas de pago ──────────────────────
+  // Recibe un array de pagos (con valorTotal / valorPagado) y devuelve los
+  // totales usados en todos los módulos. Fuente única de verdad para evitar
+  // que la fórmula diverja entre pagos.js y dashboard.js.
+  calcularSaldo(pagos) {
+    const lista   = Array.isArray(pagos) ? pagos : [];
+    const total   = lista.reduce((s, p) => s + (p.valorTotal  || 0), 0);
+    const pagado  = lista.reduce((s, p) => s + (p.valorPagado || 0), 0);
+    const pendiente = Math.max(0, total - pagado);
+    const pct     = total > 0 ? Math.round(pagado / total * 100) : 0;
+    return { total, pagado, pendiente, pct };
+  },
+
   // ── Moneda ocultable ──────────────────────────────────────────────────────
   // Envuelve el valor en un <span class="money-value"> para que el toggle de
   // privacidad (ojito) pueda ocultarlo con CSS. Usar SOLO en HTML visible,

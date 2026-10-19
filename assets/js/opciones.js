@@ -63,9 +63,13 @@ window.Opciones = {
   llenarSelect(selectId, lista, incluirOtro = false) {
     const sel = document.getElementById(selectId);
     if (!sel) return;
+    // Escape local (no depende de UI.escapeHTML para independencia de carga)
+    const esc = s => String(s || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
     const valorActual = sel.value;
     sel.innerHTML = '<option value="">Seleccionar...</option>' +
-      lista.map(op => `<option value="${op}">${op}</option>`).join('') +
+      (lista || []).map(op => `<option value="${esc(op)}">${esc(op)}</option>`).join('') +
       (incluirOtro ? '<option value="Otro">Otro</option>' : '');
     // Restaurar valor si sigue existiendo
     if (valorActual) sel.value = valorActual;

@@ -42,9 +42,7 @@ window.Dashboard = {
       // Entrega en ≤ 7 días con pago incompleto
       if (proyecto?.fechaEntrega) {
         const diasEntrega = Math.round((new Date(proyecto.fechaEntrega + 'T00:00:00') - hoy) / 86400000);
-        const totalPag    = cPagos.reduce((s, p) => s + (p.valorPagado || 0), 0);
-        const totalEsp    = cPagos.reduce((s, p) => s + (p.valorTotal  || 0), 0);
-        const pct         = totalEsp > 0 ? Math.round(totalPag / totalEsp * 100) : 0;
+        const { pct } = UI.calcularSaldo(cPagos);
         if (diasEntrega >= 0 && diasEntrega <= 7 && pct < 100) {
           motivos.push({ icon: 'bi-calendar-x-fill', color: '#ef4444',
             texto: `Entrega ${diasEntrega === 0 ? 'hoy' : 'en ' + diasEntrega + ' días'} — ${pct}% pagado` });
@@ -219,10 +217,7 @@ window.Dashboard = {
     const finalizados       = clientes.filter(c => c.estado === 'finalizado').length;
     const perdidos          = clientes.filter(c => c.estado === 'perdido').length;
 
-    const totalEsperado     = pagos.reduce((s, p) => s + (p.valorTotal  || 0), 0);
-    const totalRecibido     = pagos.reduce((s, p) => s + (p.valorPagado || 0), 0);
-    const totalPendiente    = totalEsperado - totalRecibido;
-    const pctCobrado        = totalEsperado > 0 ? Math.round(totalRecibido / totalEsperado * 100) : 0;
+    const { total: totalEsperado, pagado: totalRecibido, pendiente: totalPendiente, pct: pctCobrado } = UI.calcularSaldo(pagos);
     const etapasPendientes  = pagos.filter(p => p.estado !== 'pagado').length;
 
     // Clientes sin seguimiento > 7 días
@@ -587,9 +582,7 @@ window.Dashboard = {
                       const c = clienteMap[cId];
                       if (!c) return '';
                       const cPagos  = pagos.filter(p => p.clienteId === cId);
-                      const total   = cPagos.reduce((s, p) => s + (p.valorTotal || 0), 0);
-                      const pagado  = cPagos.reduce((s, p) => s + (p.valorPagado || 0), 0);
-                      const pct     = total > 0 ? Math.round(pagado / total * 100) : 0;
+                      const { total, pagado, pct } = UI.calcularSaldo(cPagos);
                       const borderColor = pct >= 70 ? '#10b981' : pct >= 30 ? '#f59e0b' : '#ef4444';
                       const avatarGrad  = pct >= 70
                         ? 'linear-gradient(135deg,#10b981,#34d399)'
