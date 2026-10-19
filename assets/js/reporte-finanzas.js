@@ -12,8 +12,26 @@ window.ReporteFinanzas = {
     logo:   'assets/img/logo-construsoluciones.png'
   },
 
+  // ── Saber si una fecha cae dentro del período elegido ─────────────────────
+  _enPeriodo(fecha, periodo) {
+    if (!periodo) return true;              // histórico completo
+    if (!fecha) return false;               // sin fecha no entra en un mes concreto
+    const dt = new Date(fecha);
+    if (isNaN(dt)) return false;
+    return dt.getFullYear() === periodo.anio && dt.getMonth() === periodo.mes;
+  },
+
+  // ── Etiqueta legible del período ──────────────────────────────────────────
+  _labelPeriodo(periodo) {
+    if (!periodo) return 'Histórico completo';
+    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio',
+                   'Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    return `${meses[periodo.mes]} ${periodo.anio}`;
+  },
+
   // ── Recopilar todos los datos financieros ─────────────────────────────────
-  async _buildData() {
+  //    periodo = { anio, mes(0-11) }  ó  null = histórico completo
+  async _buildData(periodo = null) {
     const [proyectos, clientes, registros] = await Promise.all([
       DB.getAll(DB.STORES.proyectos),
       DB.getAll(DB.STORES.clientes),
@@ -23,11 +41,13 @@ window.ReporteFinanzas = {
     const comisionPct = (Opciones.get().comisionPct || 5) / 100;
     const pctLabel    = Opciones.get().comisionPct || 5;
     const clienteMap  = Object.fromEntries(clientes.map(c => [c.id, c]));
+    const enPer       = (f) => this._enPeriodo(f, periodo);
 
-    const cobrosComision = registros.filter(r => r.tipo === 'comision');
-    const prestamos      = registros.filter(r => r.tipo === 'prestamo');
-    const abonos         = registros.filter(r => r.tipo === 'abono');
-    const bases          = registros.filter(r => r.tipo === 'base');
+    // Movimientos filtrados por el período (Opción A: movimientos del mes)
+    const cobrosComision = registros.filter(r => r.tipo === 'comision' && enPer(r.fecha));
+    const prestamos      = registros.filter(r => r.tipo === 'prestamo' && enPer(r.fecha));
+    const abonos         = registros.filter(r => r.tipo === 'abono'    && enPer(r.fecha));
+    const bases          = registros.filter(r => r.tipo === 'base'     && enPer(r.fecha));
 
     // Proyectos firmados
     const proyFirmados = proyectos.filter(p => {
@@ -36,23 +56,52 @@ window.ReporteFinanzas = {
     });
 
     // Comisiones
-    const comisiones = proyFirmados.map(p => {
-      const c            = clienteMap[p.clienteId];
-      const comisionTotal = (p.precio || 0) * comisionPct;
-      const cobrado      = cobrosComision.filter(x => x.proyectoId === p.id).reduce((s, x) => s + (x.monto || 0), 0);
-      const pendiente    = comisionTotal - cobrado;
-      return {
-        cliente:  c ? c.nombre : '—',
-        modelo:   p.modelo || '—',
-        precio:   p.precio || 0,
-        comisionTotal, cobrado, pendiente,
-        estado:   pendiente <= 0 ? 'Cobrada' : cobrado > 0 ? 'Parcial' : 'Pendiente'
-      };
-    });
+    // - Histórico: todos los proyectos firmados, con su cobrado acumulado y pendiente.
+    // - Mensual (Opción A): solo proyectos con comisión cobrada en el mes; "cobrado" = lo del mes.
+    let comisiones;
+    if (periodo) {
+      // Agrupar los cobros del mes por proyecto
+      const porProyecto = {};
+      cobrosComision.forEach(x => {
+        (porProyecto[x.proyectoId] = porProyecto[x.proyectoId] || []).push(x);
+      });
+      comisiones = Object.keys(porProyecto).map(pid => {
+        const p = proyectos.find(pr => pr.id === pid);
+        const c = p ? clienteMap[p.clienteId] : null;
+        const comisionTotal = p ? (p.precio || 0) * comisionPct : 0;
+        const cobrado = porProyecto[pid].reduce((s, x) => s + (x.monto || 0), 0);
+        return {
+          cliente:  c ? c.nombre : '—',
+          modelo:   p ? (p.modelo || '—') : '—',
+          precio:   p ? (p.precio || 0) : 0,
+          comisionTotal, cobrado, pendiente: Math.max(0, comisionTotal - cobrado),
+          estado:   'Cobrada'
+        };
+      });
+    } else {
+      comisiones = proyFirmados.map(p => {
+        const c            = clienteMap[p.clienteId];
+        const comisionTotal = (p.precio || 0) * comisionPct;
+        const cobrado      = cobrosComision.filter(x => x.proyectoId === p.id).reduce((s, x) => s + (x.monto || 0), 0);
+        const pendiente    = comisionTotal - cobrado;
+        return {
+          cliente:  c ? c.nombre : '—',
+          modelo:   p.modelo || '—',
+          precio:   p.precio || 0,
+          comisionTotal, cobrado, pendiente,
+          estado:   pendiente <= 0 ? 'Cobrada' : cobrado > 0 ? 'Parcial' : 'Pendiente'
+        };
+      });
+    }
 
-    const totalComisionEsperada = comisiones.reduce((s, c) => s + c.comisionTotal, 0);
     const totalComisionCobrada  = cobrosComision.reduce((s, r) => s + (r.monto || 0), 0);
-    const totalComisionPend     = totalComisionEsperada - totalComisionCobrada;
+    // En modo mensual la "esperada" no aplica como acumulado; usamos lo cobrado como referencia del mes.
+    const totalComisionEsperada = periodo
+      ? comisiones.reduce((s, c) => s + c.comisionTotal, 0)
+      : comisiones.reduce((s, c) => s + c.comisionTotal, 0);
+    const totalComisionPend     = periodo
+      ? 0
+      : totalComisionEsperada - totalComisionCobrada;
 
     // Préstamos
     const prestamosData = prestamos.map(p => {
@@ -81,6 +130,8 @@ window.ReporteFinanzas = {
 
     return {
       fecha: new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' }),
+      esMensual: !!periodo,
+      periodoLabel: this._labelPeriodo(periodo),
       pctLabel,
       comisiones, totalComisionEsperada, totalComisionCobrada, totalComisionPend,
       prestamosData, totalPrestado, totalAbonado, deudaActual,
@@ -111,7 +162,7 @@ window.ReporteFinanzas = {
     const filasPrestamo = d.prestamosData.length > 0
       ? d.prestamosData.map(p => `
           <tr>
-            <td>${esc(p.descripcion)}<div class="sub">${p.fecha ? UI.formatDate(p.fecha) : ''}</div></td>
+            <td>${p.fecha ? UI.formatDate(p.fecha) : '—'}</td>
             <td class="num">${fmt(p.prestado)}</td>
             <td class="num ok">${fmt(p.abonado)}</td>
             <td class="num ${p.saldo > 0 ? 'warn' : 'muted'}">${fmt(p.saldo)}</td>
@@ -140,6 +191,7 @@ window.ReporteFinanzas = {
   .r-doc { text-align:right; }
   .r-doc .t { background:#1a3c8f; color:#fff; font-size:15px; font-weight:800;
               padding:6px 16px; border-radius:6px; display:inline-block; margin-bottom:6px; }
+  .r-doc .periodo { font-size:13px; font-weight:800; color:#1a3c8f; margin-bottom:3px; }
   .r-doc .f { font-size:12px; color:#666; }
 
   /* Resumen KPIs */
@@ -197,26 +249,30 @@ window.ReporteFinanzas = {
       </div>
       <div class="r-doc">
         <div class="t">REPORTE FINANCIERO</div>
+        <div class="periodo">${esc(d.periodoLabel)}</div>
         <div class="f">Generado: ${esc(d.fecha)}</div>
       </div>
     </div>
 
     <!-- Resumen ejecutivo -->
     <div class="sec">
-      <div class="sec-t">Resumen Ejecutivo</div>
+      <div class="sec-t">${d.esMensual ? 'Resumen del Mes' : 'Resumen Ejecutivo'}</div>
       <div class="kpis">
+        ${d.esMensual ? `
+        <div class="kpi ok"><div class="l">Comisiones Cobradas</div><div class="v">${fmt(d.totalComisionCobrada)}</div></div>
+        <div class="kpi blue"><div class="l">Bases Recibidas</div><div class="v">${fmt(d.totalBases)}</div></div>
+        ` : `
         <div class="kpi ok"><div class="l">Comisiones Cobradas</div><div class="v">${fmt(d.totalComisionCobrada)}</div></div>
         <div class="kpi warn"><div class="l">Comisiones Pendientes</div><div class="v">${fmt(d.totalComisionPend)}</div></div>
         <div class="kpi red"><div class="l">Deuda Restante</div><div class="v">${fmt(d.deudaActual)}</div></div>
         <div class="kpi blue"><div class="l">Bases Recibidas</div><div class="v">${fmt(d.totalBases)}</div></div>
-        <div class="kpi ok"><div class="l">Total Prestado</div><div class="v">${fmt(d.totalPrestado)}</div></div>
-        <div class="kpi ${d.disponible >= 0 ? 'ok' : 'red'}"><div class="l">${d.disponible >= 0 ? 'Disponible' : 'Déficit'}</div><div class="v">${fmt(Math.abs(d.disponible))}</div></div>
+        `}
       </div>
     </div>
 
     <!-- Comisiones -->
     <div class="sec">
-      <div class="sec-t">Comisiones por Proyecto (${esc(String(d.pctLabel))}%)</div>
+      <div class="sec-t">${d.esMensual ? 'Comisiones Cobradas en el Mes' : 'Comisiones por Proyecto'} (${esc(String(d.pctLabel))}%)</div>
       <table>
         <thead><tr>
           <th>Cliente / Proyecto</th>
@@ -240,10 +296,10 @@ window.ReporteFinanzas = {
 
     <!-- Préstamos -->
     <div class="sec">
-      <div class="sec-t">Préstamos y Abonos</div>
+      <div class="sec-t">${d.esMensual ? 'Préstamos y Abonos del Mes' : 'Préstamos y Abonos'}</div>
       <table>
         <thead><tr>
-          <th>Descripción</th>
+          <th>Fecha</th>
           <th class="num">Prestado</th>
           <th class="num">Abonado</th>
           <th class="num">Saldo</th>
@@ -267,8 +323,8 @@ window.ReporteFinanzas = {
   },
 
   // ── Imprimir el reporte ────────────────────────────────────────────────────
-  async imprimir() {
-    const d = await this._buildData();
+  async imprimir(periodo = null) {
+    const d = await this._buildData(periodo);
     const html = this._buildHTML(d);
     try {
       const win = window.open('', '_blank', 'width=860,height=700');
@@ -286,7 +342,7 @@ window.ReporteFinanzas = {
   },
 
   // ── Descargar el reporte en PDF (multipágina) ─────────────────────────────
-  async descargarPDF() {
+  async descargarPDF(periodo = null) {
     const jsPDFAvail = !!(window.jspdf?.jsPDF || window.jsPDF);
     const h2cAvail   = !!window.html2canvas;
     if (!jsPDFAvail || !h2cAvail) {
@@ -303,9 +359,12 @@ window.ReporteFinanzas = {
     UI.toast('Generando reporte...', 'info', 2500);
 
     try {
-      const d = await this._buildData();
+      const d = await this._buildData(periodo);
       const html = this._buildHTML(d);
-      const fileName = 'Reporte_Financiero_' + new Date().toISOString().split('T')[0] + '.pdf';
+      const sufijo = periodo
+        ? `${periodo.anio}-${String(periodo.mes + 1).padStart(2, '0')}`
+        : new Date().toISOString().split('T')[0];
+      const fileName = 'Reporte_Financiero_' + sufijo + '.pdf';
 
       const iframe = document.createElement('iframe');
       iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:794px;height:1123px;border:none;visibility:hidden;';
@@ -363,6 +422,114 @@ window.ReporteFinanzas = {
       console.error('[ReporteFinanzas] Error al generar PDF:', err);
       UI.toast('Error al generar el PDF. Usa "Imprimir" y guarda como PDF.', 'warning', 8000);
     }
+  },
+
+  // ── Modal: elegir período antes de generar ────────────────────────────────
+  //    accion = 'pdf' | 'imprimir'
+  abrirSelector(accion = 'pdf') {
+    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio',
+                   'Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const hoy    = new Date();
+    const anioAct = hoy.getFullYear();
+    const mesAct  = hoy.getMonth();
+
+    const opcMeses = meses.map((m, i) =>
+      `<option value="${i}" ${i === mesAct ? 'selected' : ''}>${m}</option>`).join('');
+    const anios = [];
+    for (let a = anioAct; a >= anioAct - 5; a--) anios.push(a);
+    const opcAnios = anios.map(a =>
+      `<option value="${a}" ${a === anioAct ? 'selected' : ''}>${a}</option>`).join('');
+
+    const id = 'rf-selector-' + Date.now();
+    const titulo = accion === 'imprimir' ? 'Imprimir reporte' : 'Descargar reporte PDF';
+    const html = `
+      <div class="modal fade" id="${id}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+          <div class="modal-content border-0 shadow-lg" style="border-radius:20px;overflow:hidden;">
+            <div class="modal-header border-0 py-4 px-4" style="background:linear-gradient(135deg,#0f1f30,#1a3c5e,#2d6a9f);">
+              <div class="d-flex align-items-center gap-3">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle"
+                     style="width:44px;height:44px;background:rgba(255,255,255,.15);">
+                  <i class="bi bi-file-earmark-bar-graph text-white fs-5"></i>
+                </div>
+                <div>
+                  <h6 class="text-white mb-0 fw-bold">${titulo}</h6>
+                  <small class="text-white-50">Elige el período del reporte</small>
+                </div>
+              </div>
+              <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+              <div class="mb-3">
+                <label class="form-label fw-semibold small text-muted text-uppercase">Tipo de reporte</label>
+                <div class="d-flex flex-column gap-2">
+                  <label class="d-flex align-items-center gap-2 p-3 rounded-3 border" style="cursor:pointer;">
+                    <input type="radio" name="${id}-tipo" value="mes" class="form-check-input mt-0" checked>
+                    <div>
+                      <div class="fw-semibold">Movimientos de un mes</div>
+                      <small class="text-muted">Comisiones, préstamos, abonos y bases del mes</small>
+                    </div>
+                  </label>
+                  <label class="d-flex align-items-center gap-2 p-3 rounded-3 border" style="cursor:pointer;">
+                    <input type="radio" name="${id}-tipo" value="todo" class="form-check-input mt-0">
+                    <div>
+                      <div class="fw-semibold">Histórico completo</div>
+                      <small class="text-muted">Todo el acumulado hasta la fecha</small>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              <div class="row g-2" id="${id}-periodo">
+                <div class="col-7">
+                  <label class="form-label small text-muted mb-1">Mes</label>
+                  <select class="form-select" id="${id}-mes">${opcMeses}</select>
+                </div>
+                <div class="col-5">
+                  <label class="form-label small text-muted mb-1">Año</label>
+                  <select class="form-select" id="${id}-anio">${opcAnios}</select>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 pb-4 px-4 gap-2">
+              <button class="btn btn-light px-4 rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+              <button class="btn btn-primary px-4 rounded-pill" id="${id}-ok">
+                <i class="bi bi-${accion === 'imprimir' ? 'printer' : 'download'} me-1"></i>Generar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+    const el    = document.getElementById(id);
+    const modal = new bootstrap.Modal(el);
+    modal.show();
+
+    // Habilitar/deshabilitar selects según el tipo
+    const periodoBox = el.querySelector(`#${id}-periodo`);
+    const syncTipo = () => {
+      const tipo = el.querySelector(`input[name="${id}-tipo"]:checked`).value;
+      periodoBox.style.opacity = tipo === 'todo' ? '0.4' : '1';
+      periodoBox.style.pointerEvents = tipo === 'todo' ? 'none' : 'auto';
+    };
+    el.querySelectorAll(`input[name="${id}-tipo"]`).forEach(r => r.addEventListener('change', syncTipo));
+    syncTipo();
+
+    el.querySelector(`#${id}-ok`).onclick = () => {
+      const tipo = el.querySelector(`input[name="${id}-tipo"]:checked`).value;
+      let periodo = null;
+      if (tipo === 'mes') {
+        periodo = {
+          anio: parseInt(el.querySelector(`#${id}-anio`).value, 10),
+          mes:  parseInt(el.querySelector(`#${id}-mes`).value, 10)
+        };
+      }
+      modal.hide();
+      if (accion === 'imprimir') this.imprimir(periodo);
+      else this.descargarPDF(periodo);
+    };
+
+    el.addEventListener('hidden.bs.modal', () => el.remove(), { once: true });
   }
 };
 

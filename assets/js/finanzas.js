@@ -94,11 +94,11 @@ window.Finanzas = {
                   Base en ${diasProxBase} día${diasProxBase !== 1 ? 's' : ''}
                 </div>` : ''}
               <button class="btn btn-light btn-sm fw-semibold"
-                      onclick="ReporteFinanzas.descargarPDF()" title="Descargar reporte en PDF">
+                      onclick="ReporteFinanzas.abrirSelector('pdf')" title="Descargar reporte en PDF">
                 <i class="bi bi-file-earmark-pdf me-1"></i>Reporte PDF
               </button>
               <button class="btn btn-outline-light btn-sm fw-semibold"
-                      onclick="ReporteFinanzas.imprimir()" title="Imprimir reporte">
+                      onclick="ReporteFinanzas.abrirSelector('imprimir')" title="Imprimir reporte">
                 <i class="bi bi-printer"></i>
               </button>
             </div>
