@@ -48,7 +48,7 @@ window.Finanzas = {
       return c && ['firmado','construccion','finalizado'].includes(c.estado);
     });
 
-    const totalComisionEsperada = proyFirmados.reduce((s, p) => s + (p.precio * comisionPct), 0);
+    const totalComisionEsperada = proyFirmados.reduce((s, p) => s + Math.round(p.precio * comisionPct), 0);
     const totalComisionCobrada  = cobrosComision.reduce((s, r) => s + (r.monto || 0), 0);
     const totalComisionPendiente= totalComisionEsperada - totalComisionCobrada;
 
@@ -245,7 +245,7 @@ window.Finanzas = {
           ${proyectos.map(p => {
             const cliente      = clienteMap[p.clienteId];
             const pctComision  = (Opciones.get().comisionPct || 5) / 100;
-            const comisionTotal= p.precio * pctComision;
+            const comisionTotal= Math.round(p.precio * pctComision);
             const cobrado      = cobros.filter(c => c.proyectoId === p.id).reduce((s, c) => s + (c.monto || 0), 0);
             const pendiente    = comisionTotal - cobrado;
             const pct          = comisionTotal > 0 ? Math.round(cobrado / comisionTotal * 100) : 0;
@@ -426,7 +426,7 @@ window.Finanzas = {
       const precio = parseFloat(opt?.dataset.precio || 0);
       if (precio > 0) {
         const pctComision = (Opciones.get().comisionPct || 5) / 100;
-        const comision    = precio * pctComision;
+        const comision    = Math.round(precio * pctComision);
         const pctLabel    = Opciones.get().comisionPct || 5;
         document.getElementById('comisionInfoText').textContent =
           `Precio: ${UI.formatCurrency(precio)} → Comisión ${pctLabel}%: ${UI.formatCurrency(comision)}`;
@@ -445,6 +445,10 @@ window.Finanzas = {
 
     if (!proyectoId || !monto || !fecha) {
       UI.toast('Completa todos los campos obligatorios', 'warning');
+      return;
+    }
+    if (isNaN(monto) || monto <= 0) {
+      UI.toast('El monto de la comisión debe ser positivo', 'warning');
       return;
     }
 
@@ -477,6 +481,10 @@ window.Finanzas = {
 
     if (!descripcion || !monto || !fecha) {
       UI.toast('Completa todos los campos obligatorios', 'warning');
+      return;
+    }
+    if (isNaN(monto) || monto <= 0) {
+      UI.toast('El monto del préstamo debe ser positivo', 'warning');
       return;
     }
 
@@ -543,6 +551,10 @@ window.Finanzas = {
 
     if (!prestamoId || !monto || !fecha) {
       UI.toast('Completa todos los campos obligatorios', 'warning');
+      return;
+    }
+    if (isNaN(monto) || monto <= 0) {
+      UI.toast('El monto del abono debe ser positivo', 'warning');
       return;
     }
 
@@ -899,7 +911,7 @@ window.Finanzas = {
 
     const pctComision   = (Opciones.get().comisionPct || 5) / 100;
     const pctLabel      = Opciones.get().comisionPct || 5;
-    const comisionTotal = (proyecto.precio || 0) * pctComision;
+    const comisionTotal = Math.round((proyecto.precio || 0) * pctComision);
     const cobros        = registros.filter(r => r.tipo === 'comision' && r.proyectoId === proyectoId)
                                    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
     const cobrado       = cobros.reduce((s, c) => s + (c.monto || 0), 0);

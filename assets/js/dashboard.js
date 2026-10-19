@@ -15,14 +15,18 @@ window.Dashboard = {
   _calcularLlamadasHoy(clientes, proyectos, pagos, seguimientos) {
     const hoy     = new Date(); hoy.setHours(0,0,0,0);
     const ahora   = Date.now();
-    const proyMap = Object.fromEntries(proyectos.map(p => [p.clienteId, p]));
+    // Agrupar TODOS los proyectos de cada cliente (un cliente puede tener varias casas)
+    const proyPorCliente = {};
+    for (const p of proyectos) {
+      (proyPorCliente[p.clienteId] = proyPorCliente[p.clienteId] || []).push(p);
+    }
     const lista   = [];
 
     for (const c of clientes) {
       if (['perdido', 'finalizado'].includes(c.estado)) continue;
 
-      const proyecto = proyMap[c.id];
-      const cPagos   = pagos.filter(p => p.clienteId === c.id);
+      const cProyectos = proyPorCliente[c.id] || [];
+      const cPagos     = pagos.filter(p => p.clienteId === c.id);
       const ref      = c.ultimoSeguimiento || c.createdAt;
       const diasSin  = Math.floor((ahora - new Date(ref).getTime()) / 86400000);
       const motivos  = [];
@@ -39,24 +43,42 @@ window.Dashboard = {
         prioridad = 'urgente';
       }
 
-      // Entrega en ≤ 7 días con pago incompleto
-      if (proyecto?.fechaEntrega) {
+      // Entrega en ≤ 7 días con pago incompleto — evaluar TODAS las casas y
+      // alertar por la más próxima a vencer que aún no esté pagada al 100%.
+      let entregaUrgente = null; // { dias, pct }
+      for (const proyecto of cProyectos) {
+        if (!proyecto.fechaEntrega) continue;
         const diasEntrega = Math.round((new Date(proyecto.fechaEntrega + 'T00:00:00') - hoy) / 86400000);
-        const { pct } = UI.calcularSaldo(cPagos);
-        if (diasEntrega >= 0 && diasEntrega <= 7 && pct < 100) {
-          motivos.push({ icon: 'bi-calendar-x-fill', color: '#ef4444',
-            texto: `Entrega ${diasEntrega === 0 ? 'hoy' : 'en ' + diasEntrega + ' días'} — ${pct}% pagado` });
-          prioridad = 'urgente';
+        if (diasEntrega < 0 || diasEntrega > 7) continue;
+        // Pago de esa casa concreta (no mezclar con las otras del cliente)
+        const pagosProy = cPagos.filter(p => p.proyectoId === proyecto.id);
+        const { pct } = UI.calcularSaldo(pagosProy);
+        if (pct >= 100) continue;
+        if (!entregaUrgente || diasEntrega < entregaUrgente.dias) {
+          entregaUrgente = { dias: diasEntrega, pct };
         }
       }
+      if (entregaUrgente) {
+        motivos.push({ icon: 'bi-calendar-x-fill', color: '#ef4444',
+          texto: `Entrega ${entregaUrgente.dias === 0 ? 'hoy' : 'en ' + entregaUrgente.dias + ' días'} — ${entregaUrgente.pct}% pagado` });
+        prioridad = 'urgente';
+      }
 
-      // En construcción con materiales pendientes
+      // En construcción con materiales pendientes — revisar la etapa
+      // 'materiales' de CADA casa, no solo la primera que aparezca.
       if (c.estado === 'construccion') {
-        const mat = cPagos.find(p => p.etapa === 'materiales');
-        if (mat && mat.estado !== 'pagado') {
-          const pctMat = mat.valorTotal > 0 ? Math.round(mat.valorPagado / mat.valorTotal * 100) : 0;
+        const matsPendientes = cPagos.filter(p => p.etapa === 'materiales' && p.estado !== 'pagado');
+        if (matsPendientes.length > 0) {
+          // Priorizar el material con más saldo pendiente
+          const mat = matsPendientes.reduce((peor, p) => {
+            const saldo = (p.valorTotal || 0) - (p.valorPagado || 0);
+            const saldoPeor = (peor.valorTotal || 0) - (peor.valorPagado || 0);
+            return saldo > saldoPeor ? p : peor;
+          });
+          const pctMat = mat.valorTotal > 0 ? Math.min(100, Math.round(mat.valorPagado / mat.valorTotal * 100)) : 0;
+          const deuda  = Math.max(0, (mat.valorTotal || 0) - (mat.valorPagado || 0));
           motivos.push({ icon: 'bi-hammer', color: '#f97316',
-            texto: `En obra — materiales al ${pctMat}% (debe ${UI.formatCurrency(mat.valorTotal - mat.valorPagado)})` });
+            texto: `En obra — materiales al ${pctMat}% (debe ${UI.formatCurrency(deuda)})` });
           if (prioridad !== 'urgente') prioridad = 'urgente';
         }
       }

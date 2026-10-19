@@ -117,7 +117,7 @@ window.Configuracion = {
             <div class="row g-4">
 
               <!-- Autenticación en dos pasos (2FA) -->
-              <div class="col-12">
+              <div class="col-12" id="seccion2FA">
                 <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
                   <div class="card-header border-0 py-3 px-4"
                        style="background:linear-gradient(135deg,#1a4a3a,#2d8a6a);">
@@ -257,7 +257,7 @@ window.Configuracion = {
               </div>
 
               <!-- Gestión de datos -->
-              <div class="col-12">
+              <div class="col-12" id="seccionDatos">
                 <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
                   <div class="card-header border-0 py-3 px-4"
                        style="background:linear-gradient(135deg,#4a3a1a,#8a6a2d);">

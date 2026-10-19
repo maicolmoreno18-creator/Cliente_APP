@@ -523,6 +523,10 @@ window.Proyectos = {
       UI.toast('Modelo, área y precio son obligatorios', 'warning');
       return;
     }
+    if (isNaN(area) || area <= 0 || isNaN(precio) || precio <= 0) {
+      UI.toast('Área y precio deben ser valores positivos', 'warning');
+      return;
+    }
 
     // Leer estado anterior del cliente para detectar cambios
     const clienteActual = await DB.get(DB.STORES.clientes, clienteId);

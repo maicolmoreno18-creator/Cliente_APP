@@ -60,9 +60,11 @@ window.Pagos = {
     if (etapas.length === 0) return;
 
     for (const etapa of etapas) {
-      // Etapa de placa: actualizar con el nuevo precio de placa
+      // Etapa de placa: actualizar con el nuevo precio de placa.
+      // Si se desmarcó "incluye placa", la etapa deja de aplicar → valorTotal 0
+      // (así no sigue contando como cobro esperado del cliente).
       if (etapa.esPlaca) {
-        const nuevoTotal = proyecto.incluyePlaca ? (proyecto.placaPrecio || 0) : etapa.valorTotal;
+        const nuevoTotal = proyecto.incluyePlaca ? (proyecto.placaPrecio || 0) : 0;
         if (etapa.valorTotal !== nuevoTotal) {
           etapa.valorTotal = nuevoTotal;
           // Recalcular estado según lo pagado vs nuevo total
@@ -264,7 +266,7 @@ window.Pagos = {
 
   // ── Card de etapa ─────────────────────────────────────────────────────────
   _etapaCard(p) {
-    const pct = p.valorTotal > 0 ? Math.round(p.valorPagado / p.valorTotal * 100) : 0;
+    const pct = p.valorTotal > 0 ? Math.min(100, Math.round(p.valorPagado / p.valorTotal * 100)) : 0;
 
     const estadoConfig = {
       pagado:   { color: '#10b981', bg: '#f0fdf4', border: '#86efac', icon: 'bi-check-circle-fill',  label: 'Pagado'  },
@@ -384,7 +386,7 @@ window.Pagos = {
 
   // ── Fila de etapa para el expediente (diseño limpio horizontal) ──────────
   _etapaRowExpediente(p) {
-    const pct = p.valorTotal > 0 ? Math.round(p.valorPagado / p.valorTotal * 100) : 0;
+    const pct = p.valorTotal > 0 ? Math.min(100, Math.round(p.valorPagado / p.valorTotal * 100)) : 0;
 
     const cfg = {
       pagado:    { color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0', icon: 'bi-check-circle-fill',  label: 'Pagado'   },

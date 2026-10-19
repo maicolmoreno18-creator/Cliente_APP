@@ -330,11 +330,24 @@ window.Clientes = {
 
     // Eliminar datos relacionados
     const proyectos = await DB.getByIndex(DB.STORES.proyectos, 'clienteId', id);
+    const proyectoIds = new Set(proyectos.map(p => p.id));
     for (const p of proyectos) {
       // Eliminar archivos multimedia del proyecto
       const archivos = await DB.getByIndex(DB.STORES.archivos, 'proyectoId', p.id);
       for (const a of archivos) await DB.delete(DB.STORES.archivos, a.id);
       await DB.delete(DB.STORES.proyectos, p.id);
+    }
+
+    // Eliminar comisiones de finanzas vinculadas a los proyectos borrados
+    // (de lo contrario seguirían sumando en "Comisiones Cobradas" / "Disponible").
+    // No se tocan préstamos/abonos/bases: esos son finanzas personales del asesor.
+    if (proyectoIds.size > 0) {
+      const registrosFin = await DB.getAll(DB.STORES.finanzas);
+      for (const r of registrosFin) {
+        if (r.tipo === 'comision' && proyectoIds.has(r.proyectoId)) {
+          await DB.delete(DB.STORES.finanzas, r.id);
+        }
+      }
     }
 
     const pagos = await DB.getByIndex(DB.STORES.pagos, 'clienteId', id);

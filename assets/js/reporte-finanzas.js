@@ -68,7 +68,7 @@ window.ReporteFinanzas = {
       comisiones = Object.keys(porProyecto).map(pid => {
         const p = proyectos.find(pr => pr.id === pid);
         const c = p ? clienteMap[p.clienteId] : null;
-        const comisionTotal = p ? (p.precio || 0) * comisionPct : 0;
+        const comisionTotal = p ? Math.round((p.precio || 0) * comisionPct) : 0;
         const cobrado = porProyecto[pid].reduce((s, x) => s + (x.monto || 0), 0);
         return {
           cliente:  c ? c.nombre : '—',
@@ -81,7 +81,7 @@ window.ReporteFinanzas = {
     } else {
       comisiones = proyFirmados.map(p => {
         const c            = clienteMap[p.clienteId];
-        const comisionTotal = (p.precio || 0) * comisionPct;
+        const comisionTotal = Math.round((p.precio || 0) * comisionPct);
         const cobrado      = cobrosComision.filter(x => x.proyectoId === p.id).reduce((s, x) => s + (x.monto || 0), 0);
         const pendiente    = comisionTotal - cobrado;
         return {
@@ -558,7 +558,7 @@ window.ReporteFinanzas = {
     const cliente = clientes.find(c => c.id === proyecto.clienteId);
 
     const pctLabel      = Opciones.get().comisionPct || 5;
-    const comisionTotal = (proyecto.precio || 0) * (pctLabel / 100);
+    const comisionTotal = Math.round((proyecto.precio || 0) * (pctLabel / 100));
     const cobros = registros.filter(r => r.tipo === 'comision' && r.proyectoId === proyectoId)
                             .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
     const cobrado   = cobros.reduce((s, c) => s + (c.monto || 0), 0);
