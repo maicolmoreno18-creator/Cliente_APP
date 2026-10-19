@@ -15,6 +15,7 @@ window.Clientes = {
     content.innerHTML = UI.spinner('Cargando clientes...');
 
     const clientes = await DB.getAll(DB.STORES.clientes);
+    this._clientesCache = clientes; // cache para búsqueda/filtrado sin reconsultar IndexedDB
     const total = clientes.length;
 
     // Actualizar badge sidebar
@@ -221,7 +222,9 @@ window.Clientes = {
     document.getElementById('searchClientes')?.addEventListener('input', (e) => {
       this.busqueda = e.target.value;
       this._visibles = 20; // Reset paginación al buscar
-      this._actualizarLista();
+      // Debounce: esperar a que el usuario deje de teclear antes de re-renderizar
+      clearTimeout(this._searchTimer);
+      this._searchTimer = setTimeout(() => this._actualizarLista(), 180);
     });
 
     document.querySelectorAll('.filter-pill').forEach(btn => {
@@ -236,8 +239,9 @@ window.Clientes = {
   },
 
   // ── Actualizar lista sin re-renderizar todo ───────────────────────────────
+  //    Reusa la caché cargada en render() (no reconsulta IndexedDB en cada tecla).
   async _actualizarLista() {
-    const clientes = await DB.getAll(DB.STORES.clientes);
+    const clientes = this._clientesCache || await DB.getAll(DB.STORES.clientes);
     document.getElementById('listaClientes').innerHTML = this._renderLista(clientes);
   },
 

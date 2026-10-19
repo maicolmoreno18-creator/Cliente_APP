@@ -336,12 +336,16 @@ window.UI = {
   },
 
   // ── Formatear moneda ─────────────────────────────────────────────────────
+  // Instancia única de formateador (crear un Intl.NumberFormat por llamada es
+  // costoso; lo reusamos porque el formato no cambia nunca).
+  _fmtCOP: new Intl.NumberFormat('es-CO', {
+    style:'currency', currency:'COP',
+    minimumFractionDigits:0, maximumFractionDigits:0
+  }),
+
   formatCurrency(value) {
     if (!value && value !== 0) return '—';
-    return new Intl.NumberFormat('es-CO', {
-      style:'currency', currency:'COP',
-      minimumFractionDigits:0, maximumFractionDigits:0
-    }).format(value);
+    return this._fmtCOP.format(value);
   },
 
   // ── Calcular saldo de un conjunto de etapas de pago ──────────────────────

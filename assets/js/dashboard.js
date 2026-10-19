@@ -15,10 +15,18 @@ window.Dashboard = {
   _calcularLlamadasHoy(clientes, proyectos, pagos, seguimientos) {
     const hoy     = new Date(); hoy.setHours(0,0,0,0);
     const ahora   = Date.now();
-    // Agrupar TODOS los proyectos de cada cliente (un cliente puede tener varias casas)
+    // Agrupar una sola vez por cliente (evita filtrar los arrays completos dentro del bucle)
     const proyPorCliente = {};
     for (const p of proyectos) {
       (proyPorCliente[p.clienteId] = proyPorCliente[p.clienteId] || []).push(p);
+    }
+    const pagosPorCliente = {};
+    for (const p of pagos) {
+      (pagosPorCliente[p.clienteId] = pagosPorCliente[p.clienteId] || []).push(p);
+    }
+    const segsPorCliente = {};
+    for (const s of seguimientos) {
+      (segsPorCliente[s.clienteId] = segsPorCliente[s.clienteId] || []).push(s);
     }
     const lista   = [];
 
@@ -26,15 +34,15 @@ window.Dashboard = {
       if (['perdido', 'finalizado'].includes(c.estado)) continue;
 
       const cProyectos = proyPorCliente[c.id] || [];
-      const cPagos     = pagos.filter(p => p.clienteId === c.id);
+      const cPagos     = pagosPorCliente[c.id] || [];
       const ref      = c.ultimoSeguimiento || c.createdAt;
       const diasSin  = Math.floor((ahora - new Date(ref).getTime()) / 86400000);
       const motivos  = [];
       let   prioridad = 'rutinario';
 
       // Recordatorio programado para hoy
-      const recHoy = seguimientos.find(s => {
-        if (s.clienteId !== c.id || !s.recordatorio || s.recordatorioMostrado) return false;
+      const recHoy = (segsPorCliente[c.id] || []).find(s => {
+        if (!s.recordatorio || s.recordatorioMostrado) return false;
         const fr = new Date(s.recordatorio);
         return fr >= hoy && fr < new Date(hoy.getTime() + 86400000);
       });
@@ -242,6 +250,9 @@ window.Dashboard = {
     const { total: totalEsperado, pagado: totalRecibido, pendiente: totalPendiente, pct: pctCobrado } = UI.calcularSaldo(pagos);
     const etapasPendientes  = pagos.filter(p => p.estado !== 'pagado').length;
 
+    // Calcular UNA sola vez la lista "A quién llamar hoy" (se usa en 2 lugares del render)
+    const llamadasHoy = this._calcularLlamadasHoy(clientes, proyectos, pagos, seguimientos);
+
     // Clientes sin seguimiento > 7 días
     const sinSeguimiento = clientes.filter(c => {
       if (['finalizado','perdido'].includes(c.estado)) return false;
@@ -263,6 +274,11 @@ window.Dashboard = {
 
     // Pagos pendientes por cliente (top 5)
     const clienteMap = Object.fromEntries(clientes.map(c => [c.id, c]));
+    // Agrupar pagos por cliente una sola vez (reusado en top5Financiero y top deudores)
+    const pagosPorClienteDash = {};
+    for (const p of pagos) {
+      (pagosPorClienteDash[p.clienteId] = pagosPorClienteDash[p.clienteId] || []).push(p);
+    }
     const pagosPendientesPorCliente = {};
     pagos.filter(p => p.estado !== 'pagado').forEach(p => {
       if (!pagosPendientesPorCliente[p.clienteId]) pagosPendientesPorCliente[p.clienteId] = 0;
@@ -294,7 +310,7 @@ window.Dashboard = {
     // ── Top 5 clientes para resumen financiero ────────────────────────────
     const top5Financiero = clientes
       .map(c => {
-        const cp = pagos.filter(p => p.clienteId === c.id);
+        const cp = pagosPorClienteDash[c.id] || [];
         const rec = cp.reduce((s, p) => s + (p.valorPagado || 0), 0);
         const pen = cp.reduce((s, p) => s + Math.max(0, (p.valorTotal || 0) - (p.valorPagado || 0)), 0);
         return { c, rec, pen, total: rec + pen };
@@ -333,7 +349,7 @@ window.Dashboard = {
               </div>
               <div class="d-flex gap-2 flex-wrap">
                 ${(() => {
-                  const ll = this._calcularLlamadasHoy(clientes, proyectos, pagos, seguimientos);
+                  const ll = llamadasHoy;
                   const urg = ll.filter(l => l.prioridad === 'urgente').length;
                   return ll.length > 0 ? `
                     <div class="hero-pill ${urg > 0 ? 'hero-pill-warn' : ''}"
@@ -429,7 +445,7 @@ window.Dashboard = {
              A QUIÉN LLAMAR HOY
              ══════════════════════════════════════════════════════════════════ -->
         ${(() => {
-          const llamadas = this._calcularLlamadasHoy(clientes, proyectos, pagos, seguimientos);
+          const llamadas = llamadasHoy;
           const urgentes    = llamadas.filter(l => l.prioridad === 'urgente').length;
           const importantes = llamadas.filter(l => l.prioridad === 'importante').length;
           const rutinarios  = llamadas.filter(l => l.prioridad === 'rutinario').length;
@@ -603,7 +619,7 @@ window.Dashboard = {
                   : topDeudores.map(([cId, monto], idx) => {
                       const c = clienteMap[cId];
                       if (!c) return '';
-                      const cPagos  = pagos.filter(p => p.clienteId === cId);
+                      const cPagos  = pagosPorClienteDash[cId] || [];
                       const { total, pagado, pct } = UI.calcularSaldo(cPagos);
                       const borderColor = pct >= 70 ? '#10b981' : pct >= 30 ? '#f59e0b' : '#ef4444';
                       const avatarGrad  = pct >= 70

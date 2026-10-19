@@ -922,13 +922,13 @@ window.Proyectos = {
       const html = `
         <div id="lightboxOverlay">
           <!-- Cerrar al clic en fondo -->
-          <div style="position:absolute;inset:0;z-index:-1;" onclick="document.getElementById('lightboxOverlay').remove()"></div>
+          <div style="position:absolute;inset:0;z-index:-1;" onclick="Proyectos._cerrarLightbox()"></div>
 
           <!-- Contador -->
           ${total > 1 ? `<div class="lb-counter">${imgIndex} / ${total}</div>` : ''}
 
           <!-- Botón cerrar -->
-          <button class="lb-close" onclick="document.getElementById('lightboxOverlay').remove()">
+          <button class="lb-close" onclick="Proyectos._cerrarLightbox()">
             <i class="bi bi-x-lg"></i>
           </button>
 
@@ -1000,21 +1000,33 @@ window.Proyectos = {
 
     mostrar(idx);
 
-    // Teclado: flechas + Escape
-    const handler = (e) => {
-      const overlay = document.getElementById('lightboxOverlay');
-      if (!overlay) { document.removeEventListener('keydown', handler); return; }
-
+    // Teclado: flechas + Escape. Guardamos el handler para poder removerlo
+    // en _cerrarLightbox (se cierre con tecla, clic en fondo o botón X).
+    // Si quedó uno de una apertura previa, lo quitamos antes.
+    if (this._lbKeyHandler) document.removeEventListener('keydown', this._lbKeyHandler);
+    this._lbKeyHandler = (e) => {
+      if (!document.getElementById('lightboxOverlay')) {
+        this._cerrarLightbox();
+        return;
+      }
       if (e.key === 'Escape') {
-        overlay.remove();
-        document.removeEventListener('keydown', handler);
+        this._cerrarLightbox();
       } else if (e.key === 'ArrowRight') {
         document.getElementById('lbNext')?.click();
       } else if (e.key === 'ArrowLeft') {
         document.getElementById('lbPrev')?.click();
       }
     };
-    document.addEventListener('keydown', handler);
+    document.addEventListener('keydown', this._lbKeyHandler);
+  },
+
+  // ── Cerrar lightbox y limpiar su listener de teclado ──────────────────────
+  _cerrarLightbox() {
+    document.getElementById('lightboxOverlay')?.remove();
+    if (this._lbKeyHandler) {
+      document.removeEventListener('keydown', this._lbKeyHandler);
+      this._lbKeyHandler = null;
+    }
   },
 
   // ── Zoom toggle en lightbox ───────────────────────────────────────────────

@@ -1322,6 +1322,8 @@ window.BusquedaGlobal = {
     ]);
 
     const proyMap = Object.fromEntries(proyectos.map(p => [p.clienteId, p]));
+    // Mapa cliente por id — evita recorrer el array de clientes por cada proyecto/pago
+    const clienteMap = Object.fromEntries(clientes.map(c => [c.id, c]));
     this._resultados = [];
 
     // ── Clientes ──────────────────────────────────────────────────────────
@@ -1345,11 +1347,11 @@ window.BusquedaGlobal = {
     // ── Proyectos ─────────────────────────────────────────────────────────
     const proyectosMatch = proyectos.filter(p =>
       p.modelo?.toLowerCase().includes(q) ||
-      clientes.find(c => c.id === p.clienteId)?.nombre?.toLowerCase().includes(q)
+      clienteMap[p.clienteId]?.nombre?.toLowerCase().includes(q)
     ).slice(0, 4);
 
     proyectosMatch.forEach(p => {
-      const cliente = clientes.find(c => c.id === p.clienteId);
+      const cliente = clienteMap[p.clienteId];
       this._resultados.push({
         tipo:   'proyecto',
         id:     p.id,
@@ -1362,13 +1364,13 @@ window.BusquedaGlobal = {
     // ── Pagos pendientes ──────────────────────────────────────────────────
     const pagosMatch = pagos.filter(p => {
       if (p.estado === 'pagado') return false;
-      const c = clientes.find(c => c.id === p.clienteId);
+      const c = clienteMap[p.clienteId];
       return c?.nombre?.toLowerCase().includes(q) ||
              p.etapaLabel?.toLowerCase().includes(q);
     }).slice(0, 4);
 
     pagosMatch.forEach(p => {
-      const c = clientes.find(c => c.id === p.clienteId);
+      const c = clienteMap[p.clienteId];
       const pendiente = (p.valorTotal || 0) - (p.valorPagado || 0);
       this._resultados.push({
         tipo:   'pago',
